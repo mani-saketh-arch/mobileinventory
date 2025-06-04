@@ -1,0 +1,580 @@
+{% extends "base.html" %}
+
+{% block title %}Daily Inventory Report - AS Mobiles{% endblock %}
+
+{% block content %}
+<!-- Simple Page Header -->
+<div class="row mb-3">
+    <div class="col-12">
+        <h2>📊 Daily Inventory Report</h2>
+        <p class="text-muted">Today's stock movement and current inventory status</p>
+    </div>
+</div>
+
+<!-- Today's Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-success">📥 Today's Inward</h5>
+                <h3 id="todayInward">0</h3>
+                <small class="text-muted">Phones Added</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-danger">📤 Today's Outward</h5>
+                <h3 id="todayOutward">0</h3>
+                <small class="text-muted">Phones Sold</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-primary">📱 Available Stock</h5>
+                <h3 id="availableStock">0</h3>
+                <small class="text-muted">Phones Ready</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-warning">⚠️ Pending IMEI</h5>
+                <h3 id="pendingIMEI">0</h3>
+                <small class="text-muted">Need IMEI</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('inward_page') }}" class="btn btn-success me-2">
+                    ➕ Add Stock
+                </a>
+                <a href="{{ url_for('outward_page') }}" class="btn btn-primary me-2">
+                    🛒 Make Sale
+                </a>
+                <button onclick="loadTodayReport()" class="btn btn-info me-2">
+                    🔄 Refresh Data
+                </button>
+                <button onclick="exportTodayReport()" class="btn btn-warning me-2">
+                    📄 Export Report
+                </button>
+                <button onclick="exportInvoiceTracking()" class="btn btn-secondary">
+                    📋 Invoice Tracking CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Search (Simple) -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>🔍 Quick Invoice Search</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <input type="text" id="invoiceSearch" class="form-control" placeholder="Enter invoice number to search...">
+                    </div>
+                    <div class="col-md-4">
+                        <button onclick="searchInvoice()" class="btn btn-primary">
+                            🔍 Search Invoice
+                        </button>
+                    </div>
+                </div>
+                <div id="invoiceSearchResult" class="mt-3" style="display: none;">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Transactions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📥 Today's Inward Transactions</h5>
+            </div>
+            <div class="card-body">
+                <div id="todayInwardList">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📤 Today's Outward Transactions</h5>
+            </div>
+            <div class="card-body">
+                <div id="todayOutwardList">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Summary by Brand -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>📊 Stock Summary by Brand</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Available Sets</th>
+                                <th>Available Phones</th>
+                                <th>Pending IMEI Sets</th>
+                                <th>Total Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brandSummaryTable">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock Alert -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>⚠️ Low Stock Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div id="lowStockAlerts">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple JavaScript for daily report
+document.addEventListener('DOMContentLoaded', function() {
+    loadTodayReport();
+});
+
+async function loadTodayReport() {
+    try {
+        // Show loading
+        showMessage('Loading today\'s report...', 'info');
+        
+        // Load today's summary
+        await loadTodaySummary();
+        
+        // Load today's transactions
+        await loadTodayTransactions();
+        
+        // Load brand summary
+        await loadBrandSummary();
+        
+        // Load low stock alerts
+        await loadLowStockAlerts();
+        
+        showMessage('Report loaded successfully!', 'success');
+    } catch (error) {
+        console.error('Error loading report:', error);
+        showMessage('Error loading report: ' + error.message, 'danger');
+    }
+}
+
+async function loadTodaySummary() {
+    try {
+        const response = await fetch('/api/get_daily_summary');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('todayInward').textContent = result.summary.todayInward || 0;
+            document.getElementById('todayOutward').textContent = result.summary.todayOutward || 0;
+            document.getElementById('availableStock').textContent = result.summary.availableStock || 0;
+            document.getElementById('pendingIMEI').textContent = result.summary.pendingIMEI || 0;
+        } else {
+            throw new Error(result.error || 'Failed to load summary');
+        }
+    } catch (error) {
+        console.error('Error loading summary:', error);
+        // Set default values on error
+        document.getElementById('todayInward').textContent = '0';
+        document.getElementById('todayOutward').textContent = '0';
+        document.getElementById('availableStock').textContent = '0';
+        document.getElementById('pendingIMEI').textContent = '0';
+    }
+}
+
+async function loadTodayTransactions() {
+    try {
+        const response = await fetch('/api/get_today_transactions');
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update inward transactions
+            const inwardList = document.getElementById('todayInwardList');
+            if (result.inwardTransactions.length === 0) {
+                inwardList.innerHTML = '<p class="text-muted">No inward transactions today</p>';
+            } else {
+                let inwardHTML = '';
+                result.inwardTransactions.forEach(transaction => {
+                    inwardHTML += `
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>Invoice: ${transaction.invoiceNumber}</strong><br>
+                            <small>Supplier: ${transaction.supplier}</small><br>
+                            <small>Phones: ${transaction.totalQuantity} | Sets: ${transaction.totalSets}</small>
+                        </div>
+                    `;
+                });
+                inwardList.innerHTML = inwardHTML;
+            }
+            
+            // Update outward transactions
+            const outwardList = document.getElementById('todayOutwardList');
+            if (result.outwardTransactions.length === 0) {
+                outwardList.innerHTML = '<p class="text-muted">No outward transactions today</p>';
+            } else {
+                let outwardHTML = '';
+                result.outwardTransactions.forEach(transaction => {
+                    outwardHTML += `
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>Invoice: ${transaction.invoiceNumber}</strong><br>
+                            <small>Customer: ${transaction.customer}</small><br>
+                            <small>Phones: ${transaction.totalQuantity}</small>
+                        </div>
+                    `;
+                });
+                outwardList.innerHTML = outwardHTML;
+            }
+        } else {
+            throw new Error(result.error || 'Failed to load transactions');
+        }
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        document.getElementById('todayInwardList').innerHTML = '<p class="text-danger">Error loading data</p>';
+        document.getElementById('todayOutwardList').innerHTML = '<p class="text-danger">Error loading data</p>';
+    }
+}
+
+async function loadBrandSummary() {
+    try {
+        const response = await fetch('/api/get_brand_summary');
+        const result = await response.json();
+        
+        if (result.success) {
+            const tableBody = document.getElementById('brandSummaryTable');
+            
+            if (result.brandSummary.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No stock data available</td></tr>';
+            } else {
+                let tableHTML = '';
+                result.brandSummary.forEach(brand => {
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${brand.brand}</strong></td>
+                            <td>${brand.availableSets}</td>
+                            <td>${brand.availablePhones}</td>
+                            <td>${brand.pendingSets}</td>
+                            <td><strong>${brand.totalStock}</strong></td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = tableHTML;
+            }
+        } else {
+            throw new Error(result.error || 'Failed to load brand summary');
+        }
+    } catch (error) {
+        console.error('Error loading brand summary:', error);
+        document.getElementById('brandSummaryTable').innerHTML = 
+            '<tr><td colspan="5" class="text-danger">Error loading brand data</td></tr>';
+    }
+}
+
+async function loadLowStockAlerts() {
+    try {
+        const response = await fetch('/api/get_low_stock_alerts');
+        const result = await response.json();
+        
+        if (result.success) {
+            const alertsDiv = document.getElementById('lowStockAlerts');
+            
+            if (result.lowStockProducts.length === 0) {
+                alertsDiv.innerHTML = '<p class="text-success">✅ No low stock alerts - all products have sufficient stock</p>';
+            } else {
+                let alertsHTML = '';
+                result.lowStockProducts.forEach(product => {
+                    const alertClass = product.availableQuantity <= 2 ? 'alert-danger' : 'alert-warning';
+                    alertsHTML += `
+                        <div class="alert ${alertClass} py-2">
+                            <strong>${product.productName}</strong> (${product.itemCode})<br>
+                            <small>Only ${product.availableQuantity} phones remaining</small>
+                        </div>
+                    `;
+                });
+                alertsDiv.innerHTML = alertsHTML;
+            }
+        } else {
+            throw new Error(result.error || 'Failed to load low stock alerts');
+        }
+    } catch (error) {
+        console.error('Error loading low stock alerts:', error);
+        document.getElementById('lowStockAlerts').innerHTML = '<p class="text-danger">Error loading alerts</p>';
+    }
+}
+
+async function exportInvoiceTracking() {
+    try {
+        showMessage('Preparing invoice tracking report...', 'info');
+        
+        const response = await fetch('/api/export_invoice_tracking', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `invoice_tracking_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            showMessage('Invoice tracking report exported successfully!', 'success');
+        } else {
+            const errorData = await response.json();
+            showMessage('Error exporting report: ' + (errorData.error || 'Unknown error'), 'danger');
+        }
+    } catch (error) {
+        showMessage('Error exporting report: ' + error.message, 'danger');
+    }
+}
+
+async function searchInvoice() {
+    const invoiceNumber = document.getElementById('invoiceSearch').value.trim();
+    
+    if (!invoiceNumber) {
+        showMessage('Please enter an invoice number', 'warning');
+        return;
+    }
+    
+    try {
+        showMessage('Searching invoice...', 'info');
+        
+        const response = await fetch('/api/search_invoice', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({invoiceNumber: invoiceNumber})
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayInvoiceResult(result.data);
+            showMessage('Invoice found!', 'success');
+        } else {
+            document.getElementById('invoiceSearchResult').innerHTML = 
+                '<div class="alert alert-warning">No data found for this invoice number</div>';
+            document.getElementById('invoiceSearchResult').style.display = 'block';
+            showMessage('Invoice not found', 'warning');
+        }
+    } catch (error) {
+        showMessage('Error searching invoice: ' + error.message, 'danger');
+    }
+}
+
+function displayInvoiceResult(data) {
+    const resultDiv = document.getElementById('invoiceSearchResult');
+    
+    let html = '<div class="alert alert-info"><strong>Invoice Found:</strong></div>';
+    
+    if (data.inward) {
+        html += `
+            <div class="card mb-2">
+                <div class="card-header bg-success text-white">
+                    📥 Inward Transaction
+                </div>
+                <div class="card-body">
+                    <p><strong>Invoice:</strong> ${data.inward.invoiceNumber}</p>
+                    <p><strong>Supplier:</strong> ${data.inward.supplier}</p>
+                    <p><strong>Date:</strong> ${new Date(data.inward.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                    <p><strong>Total Quantity:</strong> ${data.inward.totalQuantity} phones</p>
+                    <p><strong>Total Sets:</strong> ${data.inward.totalSets}</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (data.outward) {
+        html += `
+            <div class="card mb-2">
+                <div class="card-header bg-danger text-white">
+                    📤 Outward Transaction
+                </div>
+                <div class="card-body">
+                    <p><strong>Invoice:</strong> ${data.outward.invoiceNumber}</p>
+                    <p><strong>Customer:</strong> ${data.outward.customer}</p>
+                    <p><strong>Date:</strong> ${new Date(data.outward.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                    <p><strong>Total Quantity:</strong> ${data.outward.totalQuantity} phones</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    if (data.sets && data.sets.length > 0) {
+        html += `
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    📦 Related Inventory Sets (${data.sets.length})
+                </div>
+                <div class="card-body">
+                    <p><em>Complete details available in Invoice Tracking CSV export</em></p>
+                `;
+        
+        data.sets.slice(0, 3).forEach(set => {
+            html += `
+                <div class="border-bottom pb-2 mb-2">
+                    <strong>${set.setId}</strong> - ${set.productName} (${set.brand})<br>
+                    <small>Status: ${set.status} | Quantity: ${set.quantity}</small>
+                </div>
+            `;
+        });
+        
+        if (data.sets.length > 3) {
+            html += `<p class="text-muted">... and ${data.sets.length - 3} more sets</p>`;
+        }
+        
+        html += '</div></div>';
+    }
+    
+    resultDiv.innerHTML = html;
+    resultDiv.style.display = 'block';
+}
+
+function showMessage(message, type) {
+    // Simple alert system
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+// Auto refresh every 5 minutes
+setInterval(loadTodayReport, 300000);
+</script>
+
+<style>
+/* Simple, clean styles */
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+    margin-bottom: 0.5rem;
+}
+
+.alert {
+    border: none;
+    border-radius: 0.375rem;
+}
+
+.text-success { color: #198754 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-primary { color: #0d6efd !important; }
+.text-warning { color: #ffc107 !important; }
+.text-info { color: #0dcaf0 !important; }
+.text-muted { color: #6c757d !important; }
+
+h2, h3, h5 {
+    margin-bottom: 0.5rem;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+@media (max-width: 768px) {
+    .col-md-3, .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+
+{% endblock %}

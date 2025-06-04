@@ -1,0 +1,2212 @@
+{% extends "base.html" %}
+
+{% block title %}Smart Inward Inventory - AS Mobiles{% endblock %}
+
+{% block content %}
+<!-- Enhanced Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="animate-fadeInUp">
+                <h1 class="display-5 fw-bold text-dark mb-2">
+                    <i class="fas fa-arrow-down me-3" style="color: #3b82f6;"></i>Smart Inward Inventory
+                </h1>
+                <p class="text-muted fs-5 mb-0">Multi-Product Session Management with intelligent auto-complete</p>
+            </div>
+            <div class="animate-slideInRight">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('inventory_page') }}" class="btn btn-outline-info">
+                        <i class="fas fa-boxes me-2"></i>View Stock
+                    </a>
+                    <a href="{{ url_for('outward_page') }}" class="btn btn-outline-success">
+                        <i class="fas fa-arrow-up me-2"></i>Outward Sales
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Session Progress Indicator -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-sm border-0 bg-gradient-primary">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="session-phase me-4">
+                            <div class="d-flex align-items-center">
+                                <div class="phase-indicator" id="phase1" data-phase="1">
+                                    <span class="phase-number">1</span>
+                                </div>
+                                <div class="phase-line"></div>
+                                <div class="phase-indicator" id="phase2" data-phase="2">
+                                    <span class="phase-number">2</span>
+                                </div>
+                                <div class="phase-line"></div>
+                                <div class="phase-indicator" id="phase3" data-phase="3">
+                                    <span class="phase-number">3</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="session-info">
+                            <h6 class="mb-1 text-white" id="currentPhaseTitle">Phase 1: Lock Invoice Details</h6>
+                            <small class="text-white-50" id="currentPhaseDesc">Enter invoice number, date, and supplier information</small>
+                        </div>
+                    </div>
+                    <div class="session-stats">
+                        <div class="d-flex gap-3">
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-white fw-bold" id="sessionProductCount">0</div>
+                                <div class="stat-label text-white-50 small">Products</div>
+                            </div>
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-white fw-bold" id="sessionTotalQuantity">0</div>
+                                <div class="stat-label text-white-50 small">Total Phones</div>
+                            </div>
+                            <div class="stat-item text-center">
+                                <div class="stat-value text-white fw-bold" id="sessionTotalSets">0</div>
+                                <div class="stat-label text-white-50 small">Total Sets</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Entry Form -->
+    <div class="col-lg-8">
+        <!-- Phase 1: Invoice Lock Card -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp" id="invoiceLockCard">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lock me-2"></i>Phase 1: Lock Invoice Details
+                    </h5>
+                    <span class="badge bg-light text-primary" id="invoiceStatus">New Session</span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form id="invoiceForm">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label for="purchaseInvoice" class="form-label">
+                                <i class="fas fa-receipt me-1 text-success"></i>Purchase Invoice Number *
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="purchaseInvoice" 
+                                   placeholder="e.g., PI-2025-001" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Unique supplier invoice number
+                            </div>
+                            <div id="invoiceValidation" class="mt-2" style="display: none;"></div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="invoiceDate" class="form-label">
+                                <i class="fas fa-calendar me-1 text-info"></i>Invoice Date *
+                            </label>
+                            <input type="date" class="form-control form-control-lg" id="invoiceDate" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Date on supplier invoice
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="supplierName" class="form-label">
+                                <i class="fas fa-truck me-1 text-info"></i>Supplier Name *
+                            </label>
+                            <input type="text" class="form-control form-control-lg" id="supplierName" 
+                                   placeholder="e.g., ABC Distributors" required>
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>Supplier company name
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-3 justify-content-end mt-4">
+                        <button type="button" class="btn btn-warning btn-lg" onclick="fillTestInvoice()">
+                            <i class="fas fa-flask me-2"></i>Fill Test Data
+                        </button>
+                        <button type="button" class="btn btn-primary btn-lg" onclick="lockInvoiceDetails()">
+                            <i class="fas fa-lock me-2"></i>Lock & Proceed to Products
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Phase 2: Product Entry Card -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp" id="productEntryCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Phase 2: Add Products to Session
+                    </h5>
+                    <div class="d-flex gap-2">
+                        <span class="badge bg-light text-success" id="entryMode">New Product</span>
+                        <button class="btn btn-sm btn-outline-light" onclick="unlockInvoice()">
+                            <i class="fas fa-unlock me-1"></i>Edit Invoice
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <form id="productForm">
+                    <!-- Smart Product Search Section -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title mb-3">
+                            <i class="fas fa-search me-2 text-primary"></i>Smart Product Search
+                        </h6>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="itemCode" class="form-label">
+                                    <i class="fas fa-barcode me-1 text-warning"></i>Item Code *
+                                    <span class="badge bg-info ms-2">Auto-Complete Enabled</span>
+                                </label>
+                                <div class="position-relative">
+                                    <input type="text" class="form-control form-control-lg" id="itemCode" 
+                                           placeholder="Type item code (min 3 chars) for auto-complete..." required
+                                           autocomplete="off">
+                                    <div id="itemCodeDropdown" class="dropdown-menu w-100" style="max-height: 300px; overflow-y: auto;"></div>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                    Type 3+ characters to see existing products, or continue typing for new product
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Information Section -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title mb-3">
+                            <i class="fas fa-mobile-alt me-2 text-primary"></i>Product Information
+                            <span id="productStatus" class="badge bg-secondary ms-2">Ready for Entry</span>
+                        </h6>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="brand" class="form-label">
+                                    <i class="fas fa-tag me-1 text-purple"></i>Brand *
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="brand" 
+                                       placeholder="e.g., Samsung, Apple, Xiaomi" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Mobile phone brand
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="hsnCode" class="form-label">
+                                    <i class="fas fa-hashtag me-1 text-secondary"></i>HSN Code *
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="hsnCode" 
+                                       placeholder="e.g., 85171200" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Tax classification code
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="totalQuantity" class="form-label">
+                                    <i class="fas fa-calculator me-1 text-success"></i>Total Quantity *
+                                </label>
+                                <input type="number" class="form-control form-control-lg" id="totalQuantity" 
+                                       placeholder="e.g., 100" min="1" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Total number of phones to add
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-8">
+                                <label for="productName" class="form-label">
+                                    <i class="fas fa-mobile-alt me-1 text-primary"></i>Product Name *
+                                </label>
+                                <input type="text" class="form-control form-control-lg" id="productName" 
+                                       placeholder="e.g., Samsung Galaxy A25 5G (Blue, 128GB)" required>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Complete product description
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="numberOfSets" class="form-label">
+                                    <i class="fas fa-layer-group me-1 text-warning"></i>Number of Sets *
+                                </label>
+                                <input type="number" class="form-control form-control-lg" id="numberOfSets" 
+                                       placeholder="Auto-calculated" min="1" required readonly>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>Auto-calculated (10 phones per set)
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Existing Product Alert -->
+                        <div id="existingProductAlert" style="display: none;" class="alert alert-info border-0">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-info-circle me-2 mt-1"></i>
+                                <div>
+                                    <strong>Existing Product Found!</strong>
+                                    <p class="mb-2">This product already exists in inventory. New quantity will be added to existing stock.</p>
+                                    <div id="existingProductDetails"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Session Duplicate Alert -->
+                        <div id="sessionDuplicateAlert" style="display: none;" class="alert alert-warning border-0">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-exclamation-triangle me-2 mt-1"></i>
+                                <div>
+                                    <strong>Product Already in Session!</strong>
+                                    <p class="mb-0">This item code is already added to the current session. Please use a different item code or remove the existing product first.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 p-3 bg-light rounded">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bold">Calculation Check:</span>
+                                <span id="calculationResult" class="badge bg-info">Enter quantity to calculate sets</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IMEI Scanner Section -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title mb-3">
+                            <i class="fas fa-qrcode me-2 text-primary"></i>IMEI Scanner (QR Code)
+                        </h6>
+                        <div class="scanner-container">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <label for="qrScanner" class="form-label fw-bold">
+                                        <i class="fas fa-scan me-2 text-success"></i>Scan Set QR Code for IMEI Numbers:
+                                    </label>
+                                    <div class="input-group input-group-lg">
+                                        <span class="input-group-text bg-success text-white">
+                                            <i class="fas fa-qrcode fa-lg"></i>
+                                        </span>
+                                        <input type="text" class="form-control form-control-lg" id="qrScanner" 
+                                               placeholder="Focus here and scan QR code to get all 10 IMEI numbers..."
+                                               autocomplete="off"
+                                               style="font-family: 'Courier New', monospace;">
+                                        <button type="button" class="btn btn-success btn-lg" onclick="processQRCode()">
+                                            <i class="fas fa-magic me-2"></i>Process
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <i class="fas fa-lightbulb me-1 text-warning"></i>
+                                        QR code will automatically populate all 10 IMEI numbers below
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <div class="qr-visual">
+                                        <i class="fas fa-qrcode fa-5x text-success mb-2 qr-pulse"></i>
+                                        <div class="fw-bold text-success">Ready to Scan</div>
+                                        <small class="text-muted">USB Scanner Ready</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- IMEI Numbers Display -->
+                    <div class="form-section mb-4" id="imeiSection" style="display: none;">
+                        <h6 class="section-title mb-3">
+                            <i class="fas fa-list-ol me-2 text-primary"></i>IMEI Numbers (10 per set)
+                        </h6>
+                        <div class="imei-grid">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="imei-column">
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 1:</label>
+                                            <input type="text" class="form-control imei-input" id="imei1" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 2:</label>
+                                            <input type="text" class="form-control imei-input" id="imei2" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 3:</label>
+                                            <input type="text" class="form-control imei-input" id="imei3" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 4:</label>
+                                            <input type="text" class="form-control imei-input" id="imei4" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 5:</label>
+                                            <input type="text" class="form-control imei-input" id="imei5" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="imei-column">
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 6:</label>
+                                            <input type="text" class="form-control imei-input" id="imei6" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 7:</label>
+                                            <input type="text" class="form-control imei-input" id="imei7" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 8:</label>
+                                            <input type="text" class="form-control imei-input" id="imei8" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 9:</label>
+                                            <input type="text" class="form-control imei-input" id="imei9" readonly>
+                                        </div>
+                                        <div class="mb-2">
+                                            <label class="form-label small fw-bold">IMEI 10:</label>
+                                            <input type="text" class="form-control imei-input" id="imei10" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3 p-3 bg-success bg-opacity-10 rounded">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <span class="fw-bold text-success">IMEI Status: </span>
+                                <span id="imeiStatus" class="ms-2">Ready for scan</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-3 justify-content-between">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-info btn-lg" onclick="addTestProducts()">
+                                <i class="fas fa-flask me-2"></i>Add Test Products
+                            </button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary btn-lg" onclick="resetProductForm()">
+                                <i class="fas fa-undo me-2"></i>Clear Product
+                            </button>
+                            <button type="button" class="btn btn-success btn-lg" id="addProductBtn" onclick="addProductToSession()">
+                                <i class="fas fa-plus me-2"></i>Add to Session
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Phase 3: Session Summary Card -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp" id="sessionSummaryCard" style="display: none;">
+            <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list-check me-2"></i>Phase 3: Session Summary & Submit
+                    </h5>
+                    <span class="badge bg-dark text-warning" id="sessionReadyStatus">Ready to Submit</span>
+                </div>
+            </div>
+            <div class="card-body p-4">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="summary-section">
+                            <h6 class="fw-bold mb-3">📋 Invoice Information</h6>
+                            <div class="summary-item">
+                                <strong>Invoice Number:</strong> <span id="summaryInvoiceNumber">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>Invoice Date:</strong> <span id="summaryInvoiceDate">-</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>Supplier:</strong> <span id="summarySupplierName">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="summary-section">
+                            <h6 class="fw-bold mb-3">📊 Session Statistics</h6>
+                            <div class="summary-item">
+                                <strong>Total Products:</strong> <span id="summaryProductCount">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>Total Phones:</strong> <span id="summaryTotalQuantity">0</span>
+                            </div>
+                            <div class="summary-item">
+                                <strong>Total Sets:</strong> <span id="summaryTotalSets">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="session-products-list">
+                    <h6 class="fw-bold mb-3">📱 Products in Session</h6>
+                    <div id="sessionProductsList">
+                        <!-- Products will be listed here -->
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3 justify-content-between mt-4">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-lg" onclick="backToProducts()">
+                            <i class="fas fa-arrow-left me-2"></i>Add More Products
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-lg" onclick="cancelSession()">
+                            <i class="fas fa-trash me-2"></i>Cancel Session
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-primary btn-lg" id="submitSessionBtn" onclick="submitSession()">
+                            <i class="fas fa-save me-2"></i>Submit Complete Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Instructions & Live Session Panel -->
+    <div class="col-lg-4">
+        <!-- Live Session Summary Card -->
+        <div class="card shadow-lg mb-4 animate-slideInRight" id="liveSessionCard">
+            <div class="card-header bg-gradient-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>Live Session Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="session-overview">
+                    <div class="session-status mb-3 p-3 rounded" id="currentSessionStatus">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="mb-1">Session Status</h6>
+                                <span class="badge bg-secondary" id="liveSessionStatus">New Session</span>
+                            </div>
+                            <i class="fas fa-circle-notch fa-2x text-muted" id="sessionIcon"></i>
+                        </div>
+                    </div>
+
+                    <div class="live-stats">
+                        <div class="stat-row d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">Invoice:</span>
+                            <span id="liveInvoiceNumber" class="text-muted">Not Set</span>
+                        </div>
+                        <div class="stat-row d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">Supplier:</span>
+                            <span id="liveSupplierName" class="text-muted">Not Set</span>
+                        </div>
+                        <div class="stat-row d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">Products Added:</span>
+                            <span id="liveProductCount" class="badge bg-primary">0</span>
+                        </div>
+                        <div class="stat-row d-flex justify-content-between py-2 border-bottom">
+                            <span class="fw-bold">Total Phones:</span>
+                            <span id="liveTotalQuantity" class="badge bg-success">0</span>
+                        </div>
+                        <div class="stat-row d-flex justify-content-between py-2">
+                            <span class="fw-bold">Total Sets:</span>
+                            <span id="liveTotalSets" class="badge bg-warning">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="liveProductsList" class="mt-3" style="display: none;">
+                    <h6 class="fw-bold mb-2">Products in Session:</h6>
+                    <div id="liveProductsContainer" class="live-products-scroll">
+                        <!-- Live products will appear here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions Card -->
+        <div class="card shadow-lg mb-4 animate-slideInRight">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-question-circle me-2"></i>Multi-Product Workflow
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="instruction-steps">
+                    <div class="step-item d-flex mb-3 p-3 bg-light rounded">
+                        <div class="step-number bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-weight: bold;">1</div>
+                        <div>
+                            <strong>Lock Invoice Details</strong>
+                            <p class="mb-0 text-muted small">Enter and lock invoice number, date, and supplier for the entire session</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item d-flex mb-3 p-3 bg-light rounded">
+                        <div class="step-number bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-weight: bold;">2</div>
+                        <div>
+                            <strong>Add Multiple Products</strong>
+                            <p class="mb-0 text-muted small">Use smart auto-complete to add unlimited products to the session</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-item d-flex mb-3 p-3 bg-light rounded">
+                        <div class="step-number bg-warning text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 30px; height: 30px; font-weight: bold;">3</div>
+                        <div>
+                            <strong>Submit All Together</strong>
+                            <p class="mb-0 text-muted small">Review and submit all products as one complete transaction</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-success border-0 mt-3">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-star me-2 mt-1"></i>
+                        <div>
+                            <strong>New Features:</strong>
+                            <ul class="mb-0 mt-1 small">
+                                <li><strong>Session Management:</strong> Add multiple products per invoice</li>
+                                <li><strong>Live Summary:</strong> Real-time session statistics</li>
+                                <li><strong>Duplicate Prevention:</strong> No duplicate items per session</li>
+                                <li><strong>Smart Validation:</strong> Complete session validation</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Product Info -->
+        <div class="card shadow-lg animate-slideInRight" style="animation-delay: 0.2s;" id="currentProductCard" style="display: none;">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Current Product Info
+                </h5>
+            </div>
+            <div class="card-body" id="currentProductInfo">
+                <!-- Product info will appear here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Section for Development -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-flask me-2"></i>Testing & Development
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
+                    <span class="fw-bold">Test Item Codes:</span>
+                    <button class="btn btn-warning btn-sm" onclick="useTestItemCode('631011004424')">
+                        <i class="fas fa-play me-1"></i>631011004424
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="useTestItemCode('631011004425')">
+                        <i class="fas fa-play me-1"></i>631011004425
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="useTestItemCode('NEW12345')">
+                        <i class="fas fa-plus me-1"></i>NEW12345 (New)
+                    </button>
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap mb-2">
+                    <span class="fw-bold">Test QR Code:</span>
+                    <code class="bg-light p-2 rounded">863194030000001,863194030000002,863194030000003,863194030000004,863194030000005,863194030000006,863194030000007,863194030000008,863194030000009,863194030000010</code>
+                    <button class="btn btn-warning btn-sm" onclick="useTestQR()">
+                        <i class="fas fa-qrcode me-1"></i>Use Test QR
+                    </button>
+                </div>
+                <div class="d-flex gap-2 align-items-center flex-wrap">
+                    <span class="fw-bold">Quick Actions:</span>
+                    <button class="btn btn-success btn-sm" onclick="simulateCompleteWorkflow()">
+                        <i class="fas fa-rocket me-1"></i>Complete Test Workflow
+                    </button>
+                    <button class="btn btn-info btn-sm" onclick="resetCompleteSession()">
+                        <i class="fas fa-refresh me-1"></i>Reset All
+                    </button>
+                </div>
+                <small class="text-muted d-block mt-2">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Test the complete multi-product workflow with pre-filled data
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global Session State
+let currentSession = {
+    locked: false,
+    invoiceNumber: '',
+    invoiceDate: '',
+    supplierName: '',
+    products: [],
+    currentPhase: 1
+};
+
+let existingProducts = [];
+let currentSelectedProduct = null;
+let isExistingProduct = false;
+
+// Enhanced smart inward functionality with session management
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date for invoice date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('invoiceDate').value = today;
+    
+    // Focus on first input
+    document.getElementById('purchaseInvoice').focus();
+    
+    // Load existing products for auto-complete
+    loadExistingProducts();
+    
+    // Setup auto-complete for item code
+    setupItemCodeAutocomplete();
+    
+    // Auto-calculation for quantity validation
+    document.getElementById('totalQuantity').addEventListener('input', validateQuantities);
+    
+    // QR scanner input handler
+    document.getElementById('qrScanner').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            processQRCode();
+        }
+    });
+    
+    // Invoice validation
+    document.getElementById('purchaseInvoice').addEventListener('blur', validateInvoiceNumber);
+    
+    // Form validation for both invoice and product forms
+    document.querySelectorAll('input[required]').forEach(input => {
+        input.addEventListener('blur', validateField);
+        input.addEventListener('input', validateField);
+    });
+    
+    // Initialize session UI
+    updateSessionUI();
+    updatePhaseIndicators();
+});
+
+// Session Management Functions
+function updateSessionUI() {
+    const { locked, invoiceNumber, supplierName, products } = currentSession;
+    
+    // Update live session panel
+    document.getElementById('liveSessionStatus').textContent = locked ? 'Invoice Locked' : 'New Session';
+    document.getElementById('liveSessionStatus').className = `badge ${locked ? 'bg-success' : 'bg-secondary'}`;
+    
+    document.getElementById('liveInvoiceNumber').textContent = invoiceNumber || 'Not Set';
+    document.getElementById('liveSupplierName').textContent = supplierName || 'Not Set';
+    document.getElementById('liveProductCount').textContent = products.length;
+    
+    const totalQuantity = products.reduce((sum, p) => sum + parseInt(p.totalQuantity), 0);
+    const totalSets = products.reduce((sum, p) => sum + parseInt(p.numberOfSets), 0);
+    
+    document.getElementById('liveTotalQuantity').textContent = totalQuantity;
+    document.getElementById('liveTotalSets').textContent = totalSets;
+    
+    // Update header stats
+    document.getElementById('sessionProductCount').textContent = products.length;
+    document.getElementById('sessionTotalQuantity').textContent = totalQuantity;
+    document.getElementById('sessionTotalSets').textContent = totalSets;
+    
+    // Show/hide live products list
+    const liveProductsList = document.getElementById('liveProductsList');
+    if (products.length > 0) {
+        liveProductsList.style.display = 'block';
+        updateLiveProductsList();
+    } else {
+        liveProductsList.style.display = 'none';
+    }
+    
+    // Update session icon
+    const sessionIcon = document.getElementById('sessionIcon');
+    sessionIcon.className = locked ? 'fas fa-lock fa-2x text-success' : 'fas fa-circle-notch fa-2x text-muted';
+}
+
+function updateLiveProductsList() {
+    const container = document.getElementById('liveProductsContainer');
+    
+    if (currentSession.products.length === 0) {
+        container.innerHTML = '<p class="text-muted small">No products added yet</p>';
+        return;
+    }
+    
+    let html = '';
+    currentSession.products.forEach((product, index) => {
+        html += `
+            <div class="live-product-item mb-2 p-2 bg-light rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="fw-bold small text-primary">${product.itemCode}</div>
+                        <div class="small text-muted">${product.productName.substring(0, 30)}${product.productName.length > 30 ? '...' : ''}</div>
+                        <div class="small">
+                            <span class="badge bg-info badge-sm">${product.totalQuantity} phones</span>
+                            <span class="badge bg-warning badge-sm ms-1">${product.numberOfSets} sets</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeProductFromSession(${index})" title="Remove from session">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function updatePhaseIndicators() {
+    const { currentPhase } = currentSession;
+    
+    // Reset all phase indicators
+    for (let i = 1; i <= 3; i++) {
+        const indicator = document.getElementById(`phase${i}`);
+        indicator.className = 'phase-indicator';
+        if (i < currentPhase) {
+            indicator.classList.add('completed');
+        } else if (i === currentPhase) {
+            indicator.classList.add('active');
+        }
+    }
+    
+    // Update phase title and description
+    const titles = {
+        1: 'Phase 1: Lock Invoice Details',
+        2: 'Phase 2: Add Products to Session', 
+        3: 'Phase 3: Review & Submit Session'
+    };
+    
+    const descriptions = {
+        1: 'Enter invoice number, date, and supplier information',
+        2: 'Add multiple products using smart auto-complete',
+        3: 'Review all products and submit complete session'
+    };
+    
+    document.getElementById('currentPhaseTitle').textContent = titles[currentPhase];
+    document.getElementById('currentPhaseDesc').textContent = descriptions[currentPhase];
+}
+
+// Phase 1: Invoice Lock Functions
+async function lockInvoiceDetails() {
+    // Validate invoice form
+    const invoiceFields = ['purchaseInvoice', 'invoiceDate', 'supplierName'];
+    let isValid = true;
+    
+    invoiceFields.forEach(fieldName => {
+        const element = document.getElementById(fieldName);
+        const value = element.value.trim();
+        
+        if (!value) {
+            element.classList.add('border-danger');
+            isValid = false;
+        } else {
+            element.classList.remove('border-danger');
+            element.classList.add('border-success');
+        }
+    });
+    
+    if (!isValid) {
+        showAlert('Please fill in all invoice details', 'danger');
+        return;
+    }
+    
+    // Validate invoice number doesn't exist
+    const invoiceValid = await validateInvoiceNumber();
+    if (!invoiceValid) {
+        showAlert('Please fix the invoice number issue before locking', 'danger');
+        return;
+    }
+    
+    // Lock the session
+    currentSession.locked = true;
+    currentSession.invoiceNumber = document.getElementById('purchaseInvoice').value.trim();
+    currentSession.invoiceDate = document.getElementById('invoiceDate').value;
+    currentSession.supplierName = document.getElementById('supplierName').value.trim();
+    currentSession.currentPhase = 2;
+    
+    // Disable invoice form
+    invoiceFields.forEach(fieldName => {
+        document.getElementById(fieldName).disabled = true;
+    });
+    
+    // Show next phase
+    document.getElementById('invoiceLockCard').style.display = 'none';
+    document.getElementById('productEntryCard').style.display = 'block';
+    
+    // Update UI
+    updateSessionUI();
+    updatePhaseIndicators();
+    
+    // Focus on item code
+    document.getElementById('itemCode').focus();
+    
+    showAlert(`✅ Invoice details locked! Now add products to session: ${currentSession.invoiceNumber}`, 'success');
+}
+
+function unlockInvoice() {
+    if (currentSession.products.length > 0) {
+        if (!confirm('Unlocking will remove all products from the session. Continue?')) {
+            return;
+        }
+    }
+    
+    // Reset session
+    currentSession.locked = false;
+    currentSession.products = [];
+    currentSession.currentPhase = 1;
+    
+    // Enable invoice form
+    ['purchaseInvoice', 'invoiceDate', 'supplierName'].forEach(fieldName => {
+        document.getElementById(fieldName).disabled = false;
+    });
+    
+    // Show invoice form
+    document.getElementById('invoiceLockCard').style.display = 'block';
+    document.getElementById('productEntryCard').style.display = 'none';
+    document.getElementById('sessionSummaryCard').style.display = 'none';
+    
+    // Update UI
+    updateSessionUI();
+    updatePhaseIndicators();
+    
+    showAlert('Invoice unlocked. Session reset.', 'info');
+}
+
+function fillTestInvoice() {
+    document.getElementById('purchaseInvoice').value = `PI-TEST-${Date.now()}`;
+    document.getElementById('supplierName').value = 'Test Supplier Pvt Ltd';
+    
+    showAlert('Test invoice data filled', 'info');
+}
+
+// Phase 2: Product Entry Functions
+async function addProductToSession() {
+    if (!currentSession.locked) {
+        showAlert('Please lock invoice details first', 'warning');
+        return;
+    }
+    
+    // Validate product form
+    const productFields = ['itemCode', 'brand', 'productName', 'hsnCode', 'totalQuantity', 'numberOfSets'];
+    let isValid = true;
+    const productData = {};
+    
+    productFields.forEach(fieldName => {
+        const element = document.getElementById(fieldName);
+        const value = element.value.trim();
+        
+        if (!value) {
+            element.classList.add('border-danger');
+            isValid = false;
+        } else {
+            element.classList.remove('border-danger');
+            element.classList.add('border-success');
+            productData[fieldName] = value;
+        }
+    });
+    
+    // Check for duplicates in session
+    const existingInSession = currentSession.products.find(p => p.itemCode === productData.itemCode);
+    if (existingInSession) {
+        document.getElementById('sessionDuplicateAlert').style.display = 'block';
+        document.getElementById('itemCode').classList.add('border-danger');
+        showAlert('This item code is already in the current session', 'warning');
+        return;
+    } else {
+        document.getElementById('sessionDuplicateAlert').style.display = 'none';
+    }
+    
+    // Check if IMEI numbers are loaded
+    const imeiNumbers = [];
+    let hasIMEIs = true;
+    
+    for (let i = 1; i <= 10; i++) {
+        const imei = document.getElementById(`imei${i}`).value.trim();
+        if (!imei) {
+            hasIMEIs = false;
+            break;
+        }
+        imeiNumbers.push(imei);
+    }
+    
+    if (!hasIMEIs) {
+        showAlert('Please scan QR code to load all 10 IMEI numbers', 'warning');
+        document.getElementById('qrScanner').focus();
+        return;
+    }
+    
+    if (!isValid) {
+        showAlert('Please fill in all required fields', 'danger');
+        return;
+    }
+    
+    // Validate quantities
+    const totalQty = parseInt(productData.totalQuantity);
+    const numberOfSets = parseInt(productData.numberOfSets);
+    if (totalQty < 1 || numberOfSets < 1) {
+        showAlert('Invalid quantities: Please enter valid numbers', 'danger');
+        return;
+    }
+    
+    // Add additional data
+    productData.imeiNumbers = imeiNumbers;
+    productData.isExistingProduct = isExistingProduct;
+    productData.existingProductData = currentSelectedProduct;
+    productData.addedAt = new Date().toISOString();
+    
+    // Show loading state
+    const addBtn = document.getElementById('addProductBtn');
+    const originalText = addBtn.innerHTML;
+    addBtn.disabled = true;
+    addBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Adding...';
+    
+    try {
+        // Add to session
+        currentSession.products.push(productData);
+        
+        // Update UI
+        updateSessionUI();
+        
+        // Clear product form
+        resetProductForm();
+        
+        // Success message
+        const action = isExistingProduct ? 'existing product added to session' : 'new product added to session';
+        showAlert(`✅ ${productData.productName} successfully ${action}!`, 'success');
+        
+        // Show proceed to summary button if products exist
+        if (currentSession.products.length >= 1) {
+            setTimeout(() => {
+                if (confirm('Product added successfully! Would you like to proceed to summary or add more products?')) {
+                    proceedToSummary();
+                } else {
+                    document.getElementById('itemCode').focus();
+                }
+            }, 1500);
+        }
+        
+    } catch (error) {
+        showAlert('Error adding product to session: ' + error.message, 'danger');
+    } finally {
+        addBtn.disabled = false;
+        addBtn.innerHTML = originalText;
+    }
+}
+
+function removeProductFromSession(index) {
+    if (confirm('Remove this product from the session?')) {
+        const product = currentSession.products[index];
+        currentSession.products.splice(index, 1);
+        
+        updateSessionUI();
+        showAlert(`${product.productName} removed from session`, 'info');
+        
+        // If no products left and in phase 3, go back to phase 2
+        if (currentSession.products.length === 0 && currentSession.currentPhase === 3) {
+            backToProducts();
+        }
+    }
+}
+
+function addTestProducts() {
+    const testProducts = [
+        {
+            itemCode: '631011004424',
+            brand: 'Samsung',
+            productName: 'Samsung Galaxy A25 5G (Blue, 128GB)',
+            hsnCode: '85171200',
+            totalQuantity: '30'
+        },
+        {
+            itemCode: '631011004425', 
+            brand: 'Apple',
+            productName: 'Apple iPhone 15 (Pink, 128GB)',
+            hsnCode: '85171200',
+            totalQuantity: '25'
+        }
+    ];
+    
+    let currentTestIndex = 0;
+    
+    function addNextTestProduct() {
+        if (currentTestIndex >= testProducts.length) {
+            showAlert('All test products added to session!', 'success');
+            setTimeout(() => {
+                if (confirm('Proceed to session summary?')) {
+                    proceedToSummary();
+                }
+            }, 1000);
+            return;
+        }
+        
+        const product = testProducts[currentTestIndex];
+        
+        // Fill form with test data
+        Object.keys(product).forEach(key => {
+            document.getElementById(key).value = product[key];
+        });
+        
+        // Calculate sets
+        validateQuantities();
+        
+        // Add test IMEI numbers
+        useTestQR();
+        
+        // Add to session after a brief delay
+        setTimeout(() => {
+            addProductToSession().then(() => {
+                currentTestIndex++;
+                setTimeout(addNextTestProduct, 500);
+            });
+        }, 500);
+    }
+    
+    if (currentSession.locked) {
+        addNextTestProduct();
+    } else {
+        showAlert('Please lock invoice details first', 'warning');
+    }
+}
+
+// Phase 3: Session Summary Functions
+function proceedToSummary() {
+    if (currentSession.products.length === 0) {
+        showAlert('No products in session to summarize', 'warning');
+        return;
+    }
+    
+    currentSession.currentPhase = 3;
+    
+    // Hide product entry, show summary
+    document.getElementById('productEntryCard').style.display = 'none';
+    document.getElementById('sessionSummaryCard').style.display = 'block';
+    
+    // Update summary data
+    updateSessionSummary();
+    updatePhaseIndicators();
+    
+    showAlert('Ready to submit! Review the session summary below.', 'info');
+}
+
+function updateSessionSummary() {
+    const { invoiceNumber, invoiceDate, supplierName, products } = currentSession;
+    
+    // Update invoice information
+    document.getElementById('summaryInvoiceNumber').textContent = invoiceNumber;
+    document.getElementById('summaryInvoiceDate').textContent = new Date(invoiceDate).toLocaleDateString();
+    document.getElementById('summarySupplierName').textContent = supplierName;
+    
+    // Update statistics
+    const totalQuantity = products.reduce((sum, p) => sum + parseInt(p.totalQuantity), 0);
+    const totalSets = products.reduce((sum, p) => sum + parseInt(p.numberOfSets), 0);
+    
+    document.getElementById('summaryProductCount').textContent = products.length;
+    document.getElementById('summaryTotalQuantity').textContent = totalQuantity;
+    document.getElementById('summaryTotalSets').textContent = totalSets;
+    
+    // Update products list
+    updateSessionProductsList();
+}
+
+function updateSessionProductsList() {
+    const container = document.getElementById('sessionProductsList');
+    
+    if (currentSession.products.length === 0) {
+        container.innerHTML = '<p class="text-muted">No products in session</p>';
+        return;
+    }
+    
+    let html = '';
+    currentSession.products.forEach((product, index) => {
+        const isExisting = product.isExistingProduct;
+        html += `
+            <div class="product-summary-item mb-3 p-3 border rounded">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-2">
+                            <h6 class="mb-0 me-2">${product.itemCode}</h6>
+                            <span class="badge ${isExisting ? 'bg-success' : 'bg-primary'} me-2">
+                                ${isExisting ? 'Existing' : 'New'} Product
+                            </span>
+                            <span class="badge bg-info">${product.brand}</span>
+                        </div>
+                        <p class="mb-2 text-muted">${product.productName}</p>
+                        <div class="product-stats">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Quantity:</small>
+                                    <div class="fw-bold text-success">${product.totalQuantity} phones</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Sets:</small>
+                                    <div class="fw-bold text-warning">${product.numberOfSets} sets</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">HSN Code:</small>
+                                    <div class="fw-bold">${product.hsnCode}</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">IMEI Count:</small>
+                                    <div class="fw-bold text-primary">${product.imeiNumbers.length}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ms-3">
+                        <button class="btn btn-sm btn-outline-danger" onclick="removeProductFromSession(${index})">
+                            <i class="fas fa-trash me-1"></i>Remove
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function backToProducts() {
+    currentSession.currentPhase = 2;
+    
+    document.getElementById('sessionSummaryCard').style.display = 'none';
+    document.getElementById('productEntryCard').style.display = 'block';
+    
+    updatePhaseIndicators();
+    document.getElementById('itemCode').focus();
+}
+
+function cancelSession() {
+    if (!confirm('Are you sure you want to cancel the entire session? All data will be lost.')) {
+        return;
+    }
+    
+    resetCompleteSession();
+    showAlert('Session cancelled. Starting fresh.', 'info');
+}
+
+async function submitSession() {
+    if (currentSession.products.length === 0) {
+        showAlert('No products in session to submit', 'warning');
+        return;
+    }
+    
+    // Final validation
+    const sessionData = {
+        invoiceNumber: currentSession.invoiceNumber,
+        invoiceDate: currentSession.invoiceDate,
+        supplierName: currentSession.supplierName,
+        products: currentSession.products,
+        totalProducts: currentSession.products.length,
+        totalQuantity: currentSession.products.reduce((sum, p) => sum + parseInt(p.totalQuantity), 0),
+        totalSets: currentSession.products.reduce((sum, p) => sum + parseInt(p.numberOfSets), 0),
+        sessionCreatedAt: new Date().toISOString(),
+        entryType: 'multi_product_session'
+    };
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitSessionBtn');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting Session...';
+    
+    try {
+        const response = await fetch('/api/submit_multi_product_session', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(sessionData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert(`🎉 Session submitted successfully! ${result.message}`, 'success');
+            
+            // Show success details
+            setTimeout(() => {
+                showAlert(`✅ Invoice: ${sessionData.invoiceNumber} | Products: ${sessionData.totalProducts} | Total Phones: ${sessionData.totalQuantity}`, 'info');
+            }, 2000);
+            
+            // Auto-reset after success
+            setTimeout(() => {
+                resetCompleteSession();
+                showAlert('Starting new session...', 'info');
+            }, 5000);
+            
+        } else {
+            showAlert(result.error || 'Error submitting session', 'danger');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'danger');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    }
+}
+
+// Existing Product Auto-complete Functions (Enhanced)
+async function loadExistingProducts() {
+    try {
+        const response = await fetch('/api/get_existing_products');
+        const result = await response.json();
+        
+        if (result.success) {
+            existingProducts = result.products;
+            console.log(`Loaded ${existingProducts.length} existing products for auto-complete`);
+        }
+    } catch (error) {
+        console.error('Error loading existing products:', error);
+    }
+}
+
+function setupItemCodeAutocomplete() {
+    const itemCodeInput = document.getElementById('itemCode');
+    const dropdown = document.getElementById('itemCodeDropdown');
+    let searchTimeout;
+    
+    itemCodeInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim();
+        
+        if (searchTerm.length < 3) {
+            dropdown.classList.remove('show');
+            clearProductFields();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            showProductSuggestions(searchTerm);
+        }, 300);
+    });
+    
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!itemCodeInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+}
+
+function showProductSuggestions(searchTerm) {
+    const dropdown = document.getElementById('itemCodeDropdown');
+    const matches = existingProducts.filter(product => 
+        product.itemCode.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    
+    if (matches.length === 0) {
+        dropdown.classList.remove('show');
+        clearProductFields();
+        setNewProductMode();
+        return;
+    }
+    
+    let dropdownHTML = '';
+    matches.slice(0, 8).forEach(product => {
+        // Check if already in session
+        const inSession = currentSession.products.find(p => p.itemCode === product.itemCode);
+        const disabledClass = inSession ? 'disabled-item' : '';
+        const disabledText = inSession ? '(Already in session)' : '';
+        
+        dropdownHTML += `
+            <div class="dropdown-item cursor-pointer py-2 px-3 ${disabledClass}" 
+                 onclick="${inSession ? '' : `selectExistingProduct('${product.itemCode}')`}">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold text-primary">${product.itemCode}</div>
+                        <div class="small text-muted">${product.productName}</div>
+                        <div class="small">
+                            <span class="badge bg-secondary badge-sm">${product.brand}</span>
+                            <span class="badge bg-info badge-sm ms-1">Available: ${product.totalQuantity}</span>
+                            ${inSession ? `<span class="badge bg-warning badge-sm ms-1">${disabledText}</span>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <i class="fas fa-arrow-right ${inSession ? 'text-muted' : 'text-success'}"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    dropdown.innerHTML = dropdownHTML;
+    dropdown.classList.add('show');
+}
+
+function selectExistingProduct(itemCode) {
+    const product = existingProducts.find(p => p.itemCode === itemCode);
+    if (!product) return;
+    
+    currentSelectedProduct = product;
+    isExistingProduct = true;
+    
+    // Fill all fields with existing data
+    document.getElementById('itemCode').value = product.itemCode;
+    document.getElementById('brand').value = product.brand;
+    document.getElementById('hsnCode').value = product.hsnCode;
+    document.getElementById('productName').value = product.productName;
+    
+    // Clear quantity fields for user input
+    document.getElementById('totalQuantity').value = '';
+    document.getElementById('numberOfSets').value = '';
+    
+    // Hide dropdown
+    document.getElementById('itemCodeDropdown').classList.remove('show');
+    
+    // Update UI
+    setExistingProductMode();
+    showExistingProductInfo(product);
+    
+    // Focus on quantity
+    document.getElementById('totalQuantity').focus();
+    
+    showAlert(`Existing product selected: ${product.productName}`, 'success');
+}
+
+function setExistingProductMode() {
+    document.getElementById('entryMode').textContent = 'Existing Product';
+    document.getElementById('entryMode').className = 'badge bg-success text-white';
+    
+    document.getElementById('productStatus').textContent = 'Auto-Filled from Database';
+    document.getElementById('productStatus').className = 'badge bg-success ms-2';
+    
+    document.getElementById('existingProductAlert').style.display = 'block';
+}
+
+function setNewProductMode() {
+    document.getElementById('entryMode').textContent = 'New Product';
+    document.getElementById('entryMode').className = 'badge bg-light text-primary';
+    
+    document.getElementById('productStatus').textContent = 'Manual Entry Required';
+    document.getElementById('productStatus').className = 'badge bg-warning ms-2';
+    
+    document.getElementById('existingProductAlert').style.display = 'none';
+    document.getElementById('currentProductCard').style.display = 'none';
+    
+    isExistingProduct = false;
+    currentSelectedProduct = null;
+}
+
+function showExistingProductInfo(product) {
+    const infoHTML = `
+        <div class="existing-product-info">
+            <div class="mb-2">
+                <strong>Current Stock:</strong> 
+                <span class="badge bg-primary ms-2">${product.totalQuantity} phones</span>
+            </div>
+            <div class="mb-2">
+                <strong>Available Sets:</strong> 
+                <span class="badge bg-info ms-2">${product.totalSets} sets</span>
+            </div>
+            <div class="mb-2">
+                <strong>Last Updated:</strong> 
+                <small class="text-muted">${new Date(product.lastUpdated).toLocaleDateString()}</small>
+            </div>
+            <div class="alert alert-info border-0 mt-3 mb-0">
+                <i class="fas fa-plus-circle me-2"></i>
+                New quantity will be <strong>added</strong> to existing stock
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('existingProductDetails').innerHTML = infoHTML;
+    document.getElementById('currentProductCard').style.display = 'block';
+    document.getElementById('currentProductInfo').innerHTML = infoHTML;
+}
+
+function clearProductFields() {
+    if (!isExistingProduct) {
+        // Only clear if not an existing product selection
+        document.getElementById('brand').value = '';
+        document.getElementById('hsnCode').value = '';
+        document.getElementById('productName').value = '';
+    }
+}
+
+// Form Reset and Validation Functions
+function resetProductForm() {
+    // Reset product form only
+    const productFields = ['itemCode', 'brand', 'hsnCode', 'productName', 'totalQuantity', 'numberOfSets', 'qrScanner'];
+    
+    productFields.forEach(fieldName => {
+        document.getElementById(fieldName).value = '';
+        document.getElementById(fieldName).classList.remove('border-success', 'border-danger');
+    });
+    
+    // Hide sections
+    document.getElementById('imeiSection').style.display = 'none';
+    document.getElementById('existingProductAlert').style.display = 'none';
+    document.getElementById('currentProductCard').style.display = 'none';
+    document.getElementById('sessionDuplicateAlert').style.display = 'none';
+    
+    // Clear IMEI fields
+    for (let i = 1; i <= 10; i++) {
+        document.getElementById(`imei${i}`).value = '';
+    }
+    
+    // Reset calculation
+    document.getElementById('calculationResult').textContent = 'Enter quantity to calculate sets';
+    document.getElementById('calculationResult').className = 'badge bg-info';
+    
+    // Reset IMEI status
+    document.getElementById('imeiStatus').innerHTML = 'Ready for scan';
+    
+    // Reset product mode
+    setNewProductMode();
+    
+    // Hide dropdown
+    document.getElementById('itemCodeDropdown').classList.remove('show');
+    
+    // Reset global state
+    currentSelectedProduct = null;
+    isExistingProduct = false;
+    
+    // Focus on item code
+    document.getElementById('itemCode').focus();
+}
+
+function resetCompleteSession() {
+    // Reset session state
+    currentSession = {
+        locked: false,
+        invoiceNumber: '',
+        invoiceDate: '',
+        supplierName: '',
+        products: [],
+        currentPhase: 1
+    };
+    
+    // Reset forms
+    document.getElementById('invoiceForm').reset();
+    resetProductForm();
+    
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('invoiceDate').value = today;
+    
+    // Enable invoice form
+    ['purchaseInvoice', 'invoiceDate', 'supplierName'].forEach(fieldName => {
+        document.getElementById(fieldName).disabled = false;
+        document.getElementById(fieldName).classList.remove('border-success', 'border-danger');
+    });
+    
+    // Show only invoice card
+    document.getElementById('invoiceLockCard').style.display = 'block';
+    document.getElementById('productEntryCard').style.display = 'none';
+    document.getElementById('sessionSummaryCard').style.display = 'none';
+    
+    // Reset UI
+    updateSessionUI();
+    updatePhaseIndicators();
+    
+    // Hide validations
+    document.getElementById('invoiceValidation').style.display = 'none';
+    
+    // Focus on first field
+    document.getElementById('purchaseInvoice').focus();
+}
+
+// Invoice and Form Validation Functions
+async function validateInvoiceNumber() {
+    const invoiceNumber = document.getElementById('purchaseInvoice').value.trim();
+    const validationDiv = document.getElementById('invoiceValidation');
+    
+    if (!invoiceNumber) {
+        validationDiv.style.display = 'none';
+        return false;
+    }
+    
+    try {
+        const response = await fetch('/api/check_invoice_exists', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ invoiceNumber: invoiceNumber })
+        });
+        
+        const result = await response.json();
+        
+        if (result.exists) {
+            validationDiv.innerHTML = `
+                <div class="alert alert-danger border-0 py-2">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Duplicate Invoice!</strong> This invoice number already exists.
+                </div>
+            `;
+            validationDiv.style.display = 'block';
+            document.getElementById('purchaseInvoice').classList.add('border-danger');
+            return false;
+        } else {
+            validationDiv.innerHTML = `
+                <div class="alert alert-success border-0 py-2">
+                    <i class="fas fa-check-circle me-2"></i>
+                    Invoice number is available
+                </div>
+            `;
+            validationDiv.style.display = 'block';
+            document.getElementById('purchaseInvoice').classList.remove('border-danger');
+            document.getElementById('purchaseInvoice').classList.add('border-success');
+            return true;
+        }
+    } catch (error) {
+        console.error('Error validating invoice:', error);
+        return false;
+    }
+}
+
+function validateQuantities() {
+    const totalQty = parseInt(document.getElementById('totalQuantity').value) || 0;
+    
+    if (totalQty > 0) {
+        const numberOfSets = Math.ceil(totalQty / 10);
+        document.getElementById('numberOfSets').value = numberOfSets;
+        
+        const resultElement = document.getElementById('calculationResult');
+        
+        if (totalQty % 10 === 0) {
+            resultElement.textContent = `✓ Perfect: ${totalQty} phones = ${numberOfSets} complete sets`;
+            resultElement.className = 'badge bg-success';
+        } else {
+            const lastSetPhones = totalQty % 10;
+            resultElement.textContent = `⚠ ${totalQty} phones = ${numberOfSets-1} complete sets + 1 partial set (${lastSetPhones} phones)`;
+            resultElement.className = 'badge bg-warning';
+        }
+    } else {
+        document.getElementById('numberOfSets').value = '';
+        document.getElementById('calculationResult').textContent = 'Enter quantity to calculate sets';
+        document.getElementById('calculationResult').className = 'badge bg-info';
+    }
+}
+
+function validateField(event) {
+    const field = event.target;
+    const value = field.value.trim();
+    
+    if (field.hasAttribute('required') && !value) {
+        field.classList.add('border-danger');
+        field.classList.remove('border-success');
+    } else if (value) {
+        field.classList.add('border-success');
+        field.classList.remove('border-danger');
+    }
+}
+
+// QR Code and IMEI Functions
+function processQRCode() {
+    const qrInput = document.getElementById('qrScanner');
+    const qrData = qrInput.value.trim();
+    
+    if (!qrData) {
+        showAlert('Please scan a QR code first', 'warning');
+        qrInput.focus();
+        return;
+    }
+    
+    // Parse IMEI numbers from QR code
+    const imeiNumbers = qrData.split(',').map(imei => imei.trim());
+    
+    if (imeiNumbers.length !== 10) {
+        showAlert(`Invalid QR code format. Expected 10 IMEI numbers, found ${imeiNumbers.length}`, 'danger');
+        return;
+    }
+    
+    // Validate IMEI format
+    const invalidIMEIs = imeiNumbers.filter(imei => !/^\d{15}$/.test(imei));
+    if (invalidIMEIs.length > 0) {
+        showAlert(`Invalid IMEI format detected. IMEI should be 15 digits. Check: ${invalidIMEIs.join(', ')}`, 'danger');
+        return;
+    }
+    
+    // Populate IMEI fields
+    for (let i = 1; i <= 10; i++) {
+        document.getElementById(`imei${i}`).value = imeiNumbers[i - 1];
+    }
+    
+    // Show IMEI section
+    const imeiSection = document.getElementById('imeiSection');
+    imeiSection.style.display = 'block';
+    imeiSection.classList.add('animate-fadeInUp');
+    
+    document.getElementById('imeiStatus').innerHTML = '<span class="text-success">✓ All 10 IMEI numbers loaded successfully</span>';
+    
+    // Scroll to IMEI section
+    setTimeout(() => {
+        imeiSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 300);
+    
+    showAlert('QR code processed successfully! All 10 IMEI numbers loaded.', 'success');
+}
+
+function useTestQR() {
+    const testIMEIs = [
+        '863194030000001', '863194030000002', '863194030000003', '863194030000004', '863194030000005',
+        '863194030000006', '863194030000007', '863194030000008', '863194030000009', '863194030000010'
+    ];
+    
+    document.getElementById('qrScanner').value = testIMEIs.join(',');
+    processQRCode();
+}
+
+function useTestItemCode(itemCode) {
+    document.getElementById('itemCode').value = itemCode;
+    document.getElementById('itemCode').dispatchEvent(new Event('input'));
+}
+
+// Test and Utility Functions
+function simulateCompleteWorkflow() {
+    if (currentSession.locked) {
+        showAlert('Session already in progress. Reset first to start complete workflow.', 'info');
+        return;
+    }
+    
+    // Step 1: Fill and lock invoice
+    fillTestInvoice();
+    
+    setTimeout(() => {
+        lockInvoiceDetails().then(() => {
+            // Step 2: Add test products
+            setTimeout(() => {
+                addTestProducts();
+            }, 1000);
+        });
+    }, 500);
+}
+
+// Enhanced alert function
+function showAlert(message, type = 'success') {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show animate-bounceIn shadow-lg" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    ${type === 'danger' ? '<i class="fas fa-exclamation-triangle fa-lg"></i>' : 
+                      type === 'warning' ? '<i class="fas fa-exclamation-circle fa-lg"></i>' :
+                      type === 'info' ? '<i class="fas fa-info-circle fa-lg"></i>' :
+                      '<i class="fas fa-check-circle fa-lg"></i>'}
+                </div>
+                <div class="flex-grow-1">
+                    ${message}
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    document.querySelectorAll('.alert').forEach(alert => {
+        if (alert.style.position === 'fixed') {
+            alert.remove();
+        }
+    });
+    
+    // Insert alert
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = alertHtml;
+    document.body.appendChild(alertDiv);
+    
+    // Auto-hide after 6 seconds
+    setTimeout(() => {
+        const alert = alertDiv.querySelector('.alert');
+        if (alert) {
+            try {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            } catch (e) {
+                alert.remove();
+            }
+        }
+    }, 6000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+R to reset current form/session
+    if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        if (currentSession.currentPhase === 1) {
+            resetCompleteSession();
+        } else {
+            resetProductForm();
+        }
+    }
+    
+    // Ctrl+S to submit/proceed
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        if (currentSession.currentPhase === 1) {
+            lockInvoiceDetails();
+        } else if (currentSession.currentPhase === 2) {
+            addProductToSession();
+        } else if (currentSession.currentPhase === 3) {
+            submitSession();
+        }
+    }
+    
+    // Ctrl+Q to focus QR scanner
+    if (e.ctrlKey && e.key === 'q') {
+        e.preventDefault();
+        if (currentSession.currentPhase === 2) {
+            document.getElementById('qrScanner').focus();
+        }
+    }
+    
+    // Ctrl+I to focus item code
+    if (e.ctrlKey && e.key === 'i') {
+        e.preventDefault();
+        if (currentSession.currentPhase === 2) {
+            document.getElementById('itemCode').focus();
+        }
+    }
+    
+    // Ctrl+P to proceed to next phase
+    if (e.ctrlKey && e.key === 'p') {
+        e.preventDefault();
+        if (currentSession.currentPhase === 2 && currentSession.products.length > 0) {
+            proceedToSummary();
+        }
+    }
+});
+</script>
+
+<!-- Enhanced CSS for Multi-Product Session System -->
+<style>
+/* Session Progress Indicator Styles */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+}
+
+.session-phase {
+    display: flex;
+    align-items: center;
+}
+
+.phase-indicator {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.phase-indicator.active {
+    background: #10b981;
+    border-color: #10b981;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+}
+
+.phase-indicator.completed {
+    background: #ffffff;
+    border-color: #ffffff;
+}
+
+.phase-indicator.completed .phase-number {
+    color: #3b82f6;
+}
+
+.phase-number {
+    color: white;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.phase-line {
+    width: 60px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 0 10px;
+}
+
+.session-stats .stat-item {
+    min-width: 60px;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+/* Live Session Panel Styles */
+.live-products-scroll {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.live-product-item {
+    transition: all 0.2s ease;
+    border-left: 3px solid #3b82f6;
+}
+
+.live-product-item:hover {
+    transform: translateX(3px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.session-overview .session-status {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+}
+
+.stat-row {
+    transition: background-color 0.2s ease;
+}
+
+.stat-row:hover {
+    background-color: #f8fafc;
+}
+
+/* Product Summary Styles */
+.product-summary-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid #3b82f6;
+}
+
+.product-summary-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+
+.summary-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #cbd5e1;
+}
+
+.summary-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+}
+
+/* Form Section Enhancements */
+.form-section {
+    border-left: 4px solid #3b82f6;
+    padding-left: 1rem;
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: #1e40af;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 0.5rem;
+}
+
+/* Dropdown Styles */
+.dropdown-menu.show {
+    display: block;
+    position: absolute;
+    z-index: 1000;
+    top: 100%;
+    left: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+}
+
+.dropdown-item {
+    border-bottom: 1px solid #f3f4f6;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:hover:not(.disabled-item) {
+    background-color: #f8fafc;
+    color: #1f2937;
+}
+
+.dropdown-item.disabled-item {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: #f9fafb;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Scanner Visual Effects */
+.qr-pulse {
+    animation: qrPulse 2s ease-in-out infinite;
+}
+
+@keyframes qrPulse {
+    0%, 100% {
+        transform: scale(1);
+        color: #10b981;
+    }
+    50% {
+        transform: scale(1.1);
+        color: #059669;
+    }
+}
+
+/* IMEI Grid Styling */
+.imei-grid {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    border: 2px solid #0ea5e9;
+}
+
+.imei-input {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    background-color: #f8fafc;
+    border: 1px solid #cbd5e1;
+}
+
+.imei-input:focus {
+    background-color: #ffffff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+/* Step Instructions */
+.step-item {
+    transition: all 0.3s ease;
+}
+
+.step-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.step-number {
+    min-width: 30px;
+    min-height: 30px;
+    font-size: 0.875rem;
+}
+
+/* Enhanced Form Controls */
+.form-control-lg:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+}
+
+.form-control.border-success {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.15);
+}
+
+.form-control.border-danger {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 0.2rem rgba(239, 68, 68, 0.15);
+}
+
+/* Auto-fill highlight */
+.form-control[readonly] {
+    background-color: #f0f9ff;
+    border-color: #60a5fa;
+}
+
+.form-control:disabled {
+    background-color: #f1f5f9;
+    border-color: #cbd5e1;
+    opacity: 0.8;
+}
+
+/* Product info cards */
+.existing-product-info {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    border: 1px solid #bbf7d0;
+}
+
+/* Card Animation Delays */
+.animate-slideInRight[style*="animation-delay: 0.2s"] {
+    animation-delay: 0.2s !important;
+}
+
+/* Animation Classes */
+.animate-fadeInUp {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.animate-slideInRight {
+    animation: slideInRight 0.6s ease-out;
+}
+
+.animate-bounceIn {
+    animation: bounceIn 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+    70% {
+        transform: scale(0.9);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Session Status Animations */
+@keyframes sessionPulse {
+    0%, 100% {
+        box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+    }
+}
+
+.phase-indicator.active {
+    animation: sessionPulse 2s ease-in-out infinite;
+}
+
+/* Custom Colors */
+.text-purple {
+    color: #8b5cf6 !important;
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .imei-grid {
+        padding: 1rem;
+    }
+    
+    .step-item {
+        margin-bottom: 1rem !important;
+    }
+    
+    .dropdown-menu {
+        font-size: 0.875rem;
+    }
+    
+    .phase-indicator {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .phase-line {
+        width: 40px;
+    }
+    
+    .session-stats {
+        margin-top: 1rem;
+    }
+    
+    .session-stats .d-flex {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .stat-item {
+        text-align: left !important;
+    }
+}
+
+/* Loading States */
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Alert positioning */
+.alert[style*="position: fixed"] {
+    z-index: 9999 !important;
+}
+
+/* Additional UI Enhancements */
+.card {
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+/* Success State Indicators */
+.border-success {
+    border-color: #10b981 !important;
+    background-color: #f0fdf4;
+}
+
+.border-danger {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2;
+}
+
+/* Session Complete Indicator */
+.session-complete {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    margin: 1rem 0;
+}
+</style>
+
+{% endblock %}

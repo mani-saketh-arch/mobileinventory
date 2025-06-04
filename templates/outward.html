@@ -1,0 +1,1644 @@
+{% extends "base.html" %}
+
+{% block title %}Outward Sales - AS Mobiles Inventory{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='outward.css') }}">
+<!-- Enhanced Page Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="animate-fadeInUp">
+                <h1 class="display-5 fw-bold text-dark mb-2">
+                    <i class="fas fa-shopping-cart me-3" style="color: #10b981;"></i>Outward Sales
+                </h1>
+                <p class="text-muted fs-5 mb-0">Complete warehouse sales workflow with quantity-based scanning</p>
+            </div>
+            <div class="animate-slideInRight">
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('inventory_page') }}" class="btn btn-outline-info">
+                        <i class="fas fa-boxes me-2"></i>View Stock
+                    </a>
+                    <a href="{{ url_for('reports_page') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-chart-line me-2"></i>Sales Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoice Information -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow-lg border-primary">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-invoice me-2"></i>Sales Invoice Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="invoiceNumber" class="form-label">
+                            <i class="fas fa-hashtag me-1 text-primary"></i>Invoice Number *
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="invoiceNumber" 
+                               placeholder="e.g., APASTAX2526-0001" required>
+                        <div class="form-text">Unique sales invoice number</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="invoiceDate" class="form-label">
+                            <i class="fas fa-calendar me-1 text-info"></i>Invoice Date *
+                        </label>
+                        <input type="date" class="form-control form-control-lg" id="invoiceDate" required>
+                        <div class="form-text">Date of sale</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="customerName" class="form-label">
+                            <i class="fas fa-user me-1 text-success"></i>Customer Name *
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="customerName" 
+                               placeholder="Enter customer name" required>
+                        <div class="form-text">Full customer name</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="destination" class="form-label">
+                            <i class="fas fa-map-marker-alt me-1 text-warning"></i>Destination *
+                        </label>
+                        <input type="text" class="form-control form-control-lg" id="destination" 
+                               placeholder="e.g., Ongole, AP" required>
+                        <div class="form-text">Delivery location</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Product Search & Scanner Section -->
+    <div class="col-lg-8">
+        <!-- Product Search -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>Product Search
+                    </h5>
+                    <span class="badge bg-light text-info">Smart Search</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-12">
+                        <label for="productSearch" class="form-label fw-bold">
+                            <i class="fas fa-magnifying-glass me-2 text-info"></i>Search by Item Code or Product Name:
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-info text-white">
+                                <i class="fas fa-search fa-lg"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-lg" id="productSearch" 
+                                   placeholder="Type item code (e.g., 631011004424) or product name..."
+                                   autocomplete="off">
+                            <button type="button" class="btn btn-info btn-lg" onclick="searchProduct()">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-lg" onclick="clearSearch()">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1 text-warning"></i>
+                            Search automatically as you type (minimum 2 characters) - shows available stock and IMEIs
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="searchResults" class="mt-3" style="display: none;">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Quantity-Based Addition Section -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp">
+            <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calculator me-2"></i>Quantity-Based Sales
+                    </h5>
+                    <span class="badge bg-dark text-warning">Warehouse Mode</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="selectedProduct" class="form-label fw-bold">
+                            <i class="fas fa-mobile-alt me-2 text-warning"></i>Selected Product:
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-warning text-dark">
+                                <i class="fas fa-box fa-lg"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-lg" id="selectedProduct" 
+                                   placeholder="Search and select a product first..." readonly>
+                            <button type="button" class="btn btn-warning" onclick="clearSelectedProduct()">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Use product search above to select a product for quantity-based sales
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="quantityToSell" class="form-label fw-bold">
+                            <i class="fas fa-hashtag me-2 text-warning"></i>Quantity to Sell:
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-warning text-dark">
+                                <i class="fas fa-sort-numeric-up fa-lg"></i>
+                            </span>
+                            <input type="number" class="form-control form-control-lg" id="quantityToSell" 
+                                   placeholder="e.g., 10" min="1" max="100" disabled>
+                            <button type="button" class="btn btn-warning" onclick="startQuantityMode()" id="startQuantityBtn" disabled>
+                                <i class="fas fa-play me-2"></i>Start Scanning
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-lightbulb me-1"></i>
+                            Enter how many phones to sell, then start scanning IMEIs
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity Mode Active Display -->
+                <div id="quantityModeDisplay" class="mt-3" style="display: none;">
+                    <div class="card border-success">
+                        <div class="card-header bg-success text-white">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-scan me-2"></i>Quantity Scanning Mode Active
+                                </h6>
+                                <button class="btn btn-outline-light btn-sm" onclick="cancelQuantityMode()">
+                                    <i class="fas fa-stop me-1"></i>Cancel
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <div class="scanning-info">
+                                        <div class="product-info mb-3">
+                                            <h6 class="text-success mb-2">
+                                                <i class="fas fa-mobile-alt me-2"></i>
+                                                <span id="scanningProductName">Product Name</span>
+                                            </h6>
+                                            <div class="badges">
+                                                <span class="badge bg-primary me-2" id="scanningItemCode">Item Code</span>
+                                                <span class="badge bg-secondary" id="scanningBrand">Brand</span>
+                                            </div>
+                                        </div>
+                                        <div class="progress mb-3" style="height: 25px;">
+                                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" id="scanningProgress" style="width: 0%">
+                                                <span class="fw-bold" id="progressText">0 / 0 scanned</span>
+                                            </div>
+                                        </div>
+                                        <div class="scanning-instructions">
+                                            <div class="alert alert-info border-0 mb-0">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="fas fa-barcode fa-2x me-3 text-info"></i>
+                                                    <div>
+                                                        <strong>Instructions:</strong>
+                                                        <p class="mb-0">
+                                                            Physically pick <span class="fw-bold" id="targetQuantity">0</span> phones from warehouse, 
+                                                            then scan each IMEI using the scanner below. 
+                                                            <span class="fw-bold text-success" id="remainingScans">0</span> more scans needed.
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 text-center">
+                                    <div class="scanning-visual">
+                                        <div class="scanning-animation mb-3">
+                                            <i class="fas fa-qrcode fa-4x text-success scanning-pulse"></i>
+                                        </div>
+                                        <div class="fw-bold text-success">Scan Mode Active</div>
+                                        <small class="text-muted">Use IMEI scanner below</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recently Scanned IMEIs in Quantity Mode -->
+                <div id="recentlyScannedDisplay" class="mt-3" style="display: none;">
+                    <div class="card border-info">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="fas fa-list me-2"></i>Recently Scanned IMEIs
+                            </h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div id="recentlyScannedList" class="scanned-imei-list" style="max-height: 200px; overflow-y: auto;">
+                                <!-- Recently scanned IMEIs will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMEI Scanner -->
+        <div class="card shadow-lg mb-4 animate-fadeInUp">
+            <div class="card-header bg-success text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-barcode me-2"></i>IMEI Scanner
+                    </h5>
+                    <span class="badge bg-light text-success">Live Scanner</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <label for="imeiScanner" class="form-label fw-bold">
+                            <i class="fas fa-scan me-2 text-success"></i>Scan Individual Phone IMEI:
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-success text-white">
+                                <i class="fas fa-mobile-alt fa-lg"></i>
+                            </span>
+                            <input type="text" class="form-control form-control-lg" id="imeiScanner" 
+                                   placeholder="Focus here and scan IMEI barcode (15 digits)..."
+                                   autocomplete="off" autofocus style="font-family: 'Courier New', monospace;">
+                            <button type="button" class="btn btn-success btn-lg" onclick="processIMEI()">
+                                <i class="fas fa-check me-2"></i>Validate
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-lg" onclick="clearIMEI()">
+                                <i class="fas fa-times me-2"></i>Clear
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Scan individual phone IMEI to validate against inventory and add to cart
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <div class="imei-visual">
+                            <i class="fas fa-mobile-alt fa-5x text-success mb-2 imei-pulse"></i>
+                            <div class="fw-bold text-success">Ready to Scan</div>
+                            <small class="text-muted">IMEI Scanner Active</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IMEI Validation Result -->
+        <div id="imeiResult" class="mb-4">
+            <!-- IMEI validation results will appear here -->
+        </div>
+    </div>
+
+    <!-- Shopping Cart Section -->
+    <div class="col-lg-4">
+        <div class="card shadow-lg mb-4 animate-slideInRight sticky-top">
+            <div class="card-header bg-warning text-dark">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>Shopping Cart
+                    </h5>
+                    <span class="badge bg-dark" id="cartItemCount">0 items</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div id="cartItems" class="cart-items-container">
+                    <!-- Cart items will appear here -->
+                    <div class="empty-cart text-center py-5">
+                        <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">Cart is empty</h6>
+                        <p class="text-muted mb-0">Scan IMEI or search products to add items</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="cart-summary">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span class="fw-bold fs-5">Total Items:</span>
+                        <span class="fw-bold fs-5 text-primary" id="totalItems">0</span>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-danger" onclick="clearCart()" id="clearCartBtn" disabled>
+                            <i class="fas fa-trash me-2"></i>Clear Cart
+                        </button>
+                        <button type="button" class="btn btn-success btn-lg" onclick="proceedToCheckout()" id="checkoutBtn" disabled>
+                            <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+       
+
+<!-- Checkout Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-receipt me-2"></i>Complete Sale - Final Review
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="checkoutSummary">
+                    <!-- Checkout summary will be populated here -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-lg" data-bs-dismiss="modal">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                </button>
+                <button type="button" class="btn btn-success btn-lg" onclick="completeSale()">
+                    <i class="fas fa-check me-2"></i>Complete Sale
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Global cart state
+let cart = [];
+
+// Quantity mode state
+let quantityMode = {
+    active: false,
+    productData: null,
+    targetQuantity: 0,
+    scannedCount: 0,
+    scannedIMEIs: []
+};
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Set today's date
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('invoiceDate').value = today;
+    
+    // Focus on invoice number
+    document.getElementById('invoiceNumber').focus();
+    
+    // IMEI scanner enter key handler
+    document.getElementById('imeiScanner').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            processIMEI();
+        }
+    });
+    
+    // Product search enter key handler
+    document.getElementById('productSearch').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchProduct();
+        }
+    });
+    
+    // Quantity input enter key handler
+    document.getElementById('quantityToSell').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            startQuantityMode();
+        }
+    });
+    
+    // Auto-search as user types (with debounce)
+    let searchTimeout;
+    document.getElementById('productSearch').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        const searchTerm = this.value.trim();
+        
+        if (searchTerm.length === 0) {
+            document.getElementById('searchResults').style.display = 'none';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            if (searchTerm.length >= 2) {
+                searchProduct();
+            }
+        }, 500);
+    });
+    
+    // Form validation
+    document.querySelectorAll('input[required]').forEach(input => {
+        input.addEventListener('blur', validateField);
+        input.addEventListener('input', validateField);
+    });
+});
+
+function validateField(event) {
+    const field = event.target;
+    const value = field.value.trim();
+    
+    if (field.hasAttribute('required') && !value) {
+        field.classList.add('border-danger');
+        field.classList.remove('border-success');
+    } else if (value) {
+        field.classList.add('border-success');
+        field.classList.remove('border-danger');
+    }
+}
+
+// Quantity Mode Functions
+function selectForQuantityMode(itemCode, productName, brand, availableQuantity) {
+    console.log('Selecting for quantity mode:', { itemCode, productName, brand, availableQuantity });
+    
+    // Set selected product
+    document.getElementById('selectedProduct').value = `${productName} (${itemCode}) - ${availableQuantity} available`;
+    document.getElementById('quantityToSell').disabled = false;
+    document.getElementById('quantityToSell').max = availableQuantity;
+    document.getElementById('startQuantityBtn').disabled = false;
+    
+    // Store product data
+    quantityMode.productData = {
+        itemCode: itemCode,
+        productName: productName,
+        brand: brand,
+        availableQuantity: availableQuantity
+    };
+    
+    // Focus on quantity input
+    document.getElementById('quantityToSell').focus();
+    
+    showAlert(`Selected ${productName} for quantity mode. Enter quantity and start scanning.`, 'success');
+}
+
+function clearSelectedProduct() {
+    document.getElementById('selectedProduct').value = '';
+    document.getElementById('quantityToSell').value = '';
+    document.getElementById('quantityToSell').disabled = true;
+    document.getElementById('startQuantityBtn').disabled = true;
+    
+    quantityMode.productData = null;
+    
+    showAlert('Product selection cleared', 'info');
+}
+
+function startQuantityMode() {
+    const quantity = parseInt(document.getElementById('quantityToSell').value);
+    
+    if (!quantity || quantity < 1) {
+        showAlert('Please enter a valid quantity', 'warning');
+        document.getElementById('quantityToSell').focus();
+        return;
+    }
+    
+    if (quantity > quantityMode.productData.availableQuantity) {
+        showAlert(`Cannot sell more than ${quantityMode.productData.availableQuantity} available phones`, 'danger');
+        document.getElementById('quantityToSell').focus();
+        return;
+    }
+    
+    // Activate quantity mode
+    quantityMode.active = true;
+    quantityMode.targetQuantity = quantity;
+    quantityMode.scannedCount = 0;
+    quantityMode.scannedIMEIs = [];
+    
+    console.log('Quantity mode activated:', quantityMode);
+    
+    // Update UI
+    updateQuantityModeDisplay();
+    
+    // Focus on IMEI scanner
+    document.getElementById('imeiScanner').focus();
+    
+    showAlert(`Quantity mode activated! Scan ${quantity} IMEIs for ${quantityMode.productData.productName}`, 'success');
+}
+
+function updateQuantityModeDisplay() {
+    const display = document.getElementById('quantityModeDisplay');
+    const recentDisplay = document.getElementById('recentlyScannedDisplay');
+    
+    if (quantityMode.active) {
+        display.style.display = 'block';
+        
+        // Update product info
+        document.getElementById('scanningProductName').textContent = quantityMode.productData.productName;
+        document.getElementById('scanningItemCode').textContent = quantityMode.productData.itemCode;
+        document.getElementById('scanningBrand').textContent = quantityMode.productData.brand;
+        
+        // Update progress
+        const progressPercent = (quantityMode.scannedCount / quantityMode.targetQuantity) * 100;
+        document.getElementById('scanningProgress').style.width = `${progressPercent}%`;
+        document.getElementById('progressText').textContent = `${quantityMode.scannedCount} / ${quantityMode.targetQuantity} scanned`;
+        
+        // Update instructions
+        document.getElementById('targetQuantity').textContent = quantityMode.targetQuantity;
+        document.getElementById('remainingScans').textContent = quantityMode.targetQuantity - quantityMode.scannedCount;
+        
+        // Show recently scanned if any
+        if (quantityMode.scannedIMEIs.length > 0) {
+            recentDisplay.style.display = 'block';
+            updateRecentlyScannedList();
+        }
+    } else {
+        display.style.display = 'none';
+        recentDisplay.style.display = 'none';
+    }
+}
+
+function updateRecentlyScannedList() {
+    const list = document.getElementById('recentlyScannedList');
+    let listHTML = '';
+    
+    quantityMode.scannedIMEIs.forEach((imei, index) => {
+        listHTML += `
+            <div class="scanned-item d-flex justify-content-between align-items-center p-2 border-bottom">
+                <div class="imei-info">
+                    <span class="badge bg-success me-2">${index + 1}</span>
+                    <code class="text-primary">${imei}</code>
+                </div>
+                <small class="text-muted">Just scanned</small>
+            </div>
+        `;
+    });
+    
+    list.innerHTML = listHTML;
+}
+
+function cancelQuantityMode() {
+    if (confirm(`Cancel quantity mode? ${quantityMode.scannedCount} IMEIs have been scanned but not added to cart.`)) {
+        quantityMode.active = false;
+        quantityMode.scannedCount = 0;
+        quantityMode.scannedIMEIs = [];
+        
+        updateQuantityModeDisplay();
+        clearSelectedProduct();
+        
+        showAlert('Quantity mode cancelled', 'info');
+        document.getElementById('imeiScanner').focus();
+    }
+}
+
+function completeQuantityMode() {
+    // Add all scanned IMEIs to cart
+    quantityMode.scannedIMEIs.forEach(imei => {
+        const cartItem = {
+            imei: imei,
+            setId: 'FROM_QUANTITY_MODE', // Will be updated by backend
+            itemCode: quantityMode.productData.itemCode,
+            productName: quantityMode.productData.productName,
+            brand: quantityMode.productData.brand,
+            addedAt: new Date().toLocaleTimeString(),
+            fromQuantityMode: true
+        };
+        cart.push(cartItem);
+    });
+    
+    // Update cart display
+    updateCartDisplay();
+    
+    // Reset quantity mode
+    const completedQuantity = quantityMode.targetQuantity;
+    quantityMode.active = false;
+    quantityMode.scannedCount = 0;
+    quantityMode.scannedIMEIs = [];
+    
+    updateQuantityModeDisplay();
+    clearSelectedProduct();
+    
+    showAlert(`🎉 ${completedQuantity} phones added to cart successfully!`, 'success');
+    
+    // Focus back on IMEI scanner for next product
+    document.getElementById('imeiScanner').focus();
+}
+
+function handleQuantityModeIMEI(product, imei) {
+    console.log('Handling quantity mode IMEI:', { product, imei, quantityMode });
+    
+    // Validate product matches quantity mode selection
+    if (product.itemCode !== quantityMode.productData.itemCode) {
+        showAlert(`Wrong product! Expected ${quantityMode.productData.itemCode}, got ${product.itemCode}`, 'danger');
+        document.getElementById('imeiScanner').value = '';
+        document.getElementById('imeiScanner').focus();
+        return;
+    }
+    
+    // Add to scanned list
+    quantityMode.scannedIMEIs.push(imei);
+    quantityMode.scannedCount++;
+    
+    // Clear IMEI result display
+    document.getElementById('imeiResult').innerHTML = '';
+    
+    // Update display
+    updateQuantityModeDisplay();
+    
+    // Clear scanner for next scan
+    document.getElementById('imeiScanner').value = '';
+    
+    // Check if quantity complete
+    if (quantityMode.scannedCount >= quantityMode.targetQuantity) {
+        showAlert(`✅ Quantity complete! ${quantityMode.targetQuantity} IMEIs scanned successfully`, 'success');
+        
+        // Auto-complete after short delay
+        setTimeout(() => {
+            completeQuantityMode();
+        }, 1500);
+    } else {
+        const remaining = quantityMode.targetQuantity - quantityMode.scannedCount;
+        showAlert(`✅ IMEI scanned! ${remaining} more needed`, 'info');
+        
+        // Focus back on scanner
+        setTimeout(() => {
+            document.getElementById('imeiScanner').focus();
+        }, 500);
+    }
+}
+
+// Search and Product Functions
+async function searchProduct() {
+    const searchTerm = document.getElementById('productSearch').value.trim();
+    
+    if (!searchTerm) {
+        showAlert('Please enter a search term', 'warning');
+        return;
+    }
+    
+    if (searchTerm.length < 2) {
+        showAlert('Please enter at least 2 characters', 'warning');
+        return;
+    }
+    
+    // Show loading
+    document.getElementById('searchResults').innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-info" role="status">
+                <span class="visually-hidden">Searching...</span>
+            </div>
+            <p class="mt-2 text-muted">Searching for "${searchTerm}"...</p>
+        </div>
+    `;
+    document.getElementById('searchResults').style.display = 'block';
+    
+    try {
+        const response = await fetch('/api/search_products', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ searchTerm: searchTerm })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.products.length > 0) {
+            displaySearchResults(result.products);
+        } else {
+            document.getElementById('searchResults').innerHTML = `
+                <div class="alert alert-warning">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <div>
+                            <strong>No products found for "${searchTerm}"</strong>
+                            <p class="mb-0 small">Try different keywords, item codes, or product names.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('searchResults').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Error searching products: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displaySearchResults(products) {
+    let resultsHTML = `
+        <div class="search-results">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">
+                    <i class="fas fa-search-plus me-2 text-info"></i>
+                    Search Results (${products.length} found)
+                </h6>
+                <button class="btn btn-outline-secondary btn-sm" onclick="clearSearch()">
+                    <i class="fas fa-times me-1"></i>Clear
+                </button>
+            </div>
+            <div class="row">
+    `;
+    
+    products.forEach(product => {
+        resultsHTML += `
+            <div class="col-md-12 mb-3">
+                <div class="card border-info search-result-item">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-7">
+                                <h6 class="mb-2 text-truncate" title="${product.productName}">${product.productName}</h6>
+                                <div class="product-details mb-2">
+                                    <span class="badge bg-primary me-2">${product.itemCode}</span>
+                                    <span class="badge bg-secondary me-2">${product.brand}</span>
+                                    <span class="badge bg-success">Available: ${product.availableQuantity}</span>
+                                </div>
+                                <small class="text-muted">Sets: ${product.availableSets} | Total Phones: ${product.availableQuantity}</small>
+                            </div>
+                            <div class="col-md-5 text-end">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="viewProductDetails('${product.itemCode}')">
+                                        <i class="fas fa-eye me-1"></i>View All IMEIs
+                                    </button>
+                                    <button class="btn btn-warning btn-sm" onclick="selectForQuantityMode('${product.itemCode}', '${product.productName}', '${product.brand}', ${product.availableQuantity})">
+                                        <i class="fas fa-calculator me-1"></i>Quantity Mode
+                                    </button>
+                                    ${product.availableQuantity > 0 ? 
+                                        `<button class="btn btn-info btn-sm" onclick="quickAddProduct('${product.itemCode}')">
+                                            <i class="fas fa-plus me-1"></i>Quick Add First Available
+                                        </button>` : 
+                                        `<button class="btn btn-secondary btn-sm" disabled>
+                                            <i class="fas fa-times me-1"></i>Out of Stock
+                                        </button>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    resultsHTML += `
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('searchResults').innerHTML = resultsHTML;
+    document.getElementById('searchResults').style.display = 'block';
+}
+
+async function viewProductDetails(itemCode) {
+    try {
+        const response = await fetch('/api/get_product_details', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ itemCode: itemCode })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            displayProductDetails(result.product);
+        } else {
+            showAlert(result.error || 'Error fetching product details', 'danger');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'danger');
+    }
+}
+
+function displayProductDetails(product) {
+    let detailsHTML = `
+        <div class="product-details-view mt-3">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="fas fa-mobile-alt me-2"></i>${product.productName}
+                        </h6>
+                        <button class="btn btn-outline-light btn-sm" onclick="clearSearch()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="info-item mb-2">
+                                <strong>Item Code:</strong> <span class="badge bg-primary">${product.itemCode}</span>
+                            </div>
+                            <div class="info-item mb-2">
+                                <strong>Brand:</strong> <span class="badge bg-secondary">${product.brand}</span>
+                            </div>
+                            <div class="info-item mb-2">
+                                <strong>HSN Code:</strong> ${product.hsnCode}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-item mb-2">
+                                <strong>Available Sets:</strong> <span class="badge bg-info">${product.availableSets}</span>
+                            </div>
+                            <div class="info-item mb-2">
+                                <strong>Total Phones:</strong> <span class="badge bg-success">${product.availableQuantity}</span>
+                            </div>
+                            <div class="info-item mb-2">
+                                <strong>Status:</strong> <span class="badge bg-success">In Stock</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="available-imeis">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Available IMEI Numbers (${product.availableImeis?.length || 0}):</h6>
+                        </div>
+                        <div class="imei-list" style="max-height: 300px; overflow-y: auto;">
+    `;
+    
+    if (product.availableImeis && product.availableImeis.length > 0) {
+        product.availableImeis.forEach((imei, index) => {
+            const isInCart = cart.find(item => item.imei === imei);
+            detailsHTML += `
+                <div class="imei-item d-flex justify-content-between align-items-center p-2 border rounded mb-2 ${isInCart ? 'bg-light border-warning' : ''}">
+                    <div class="imei-info">
+                        <code class="text-primary me-2">${imei}</code>
+                        ${isInCart ? '<span class="badge bg-warning text-dark">In Cart</span>' : ''}
+                    </div>
+                    <button class="btn btn-sm ${isInCart ? 'btn-outline-secondary' : 'btn-outline-success'}" 
+                            onclick="addToCartByIMEI('${imei}')" ${isInCart ? 'disabled' : ''}>
+                        <i class="fas fa-${isInCart ? 'check' : 'plus'} me-1"></i>
+                        ${isInCart ? 'Added' : 'Add to Cart'}
+                    </button>
+                </div>
+            `;
+        });
+    } else {
+        detailsHTML += `
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-circle fa-3x text-muted mb-3"></i>
+                <p class="text-muted">No IMEI numbers available for this product</p>
+            </div>
+        `;
+    }
+    
+    detailsHTML += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('searchResults').innerHTML = detailsHTML;
+}
+
+async function quickAddProduct(itemCode) {
+    try {
+        const response = await fetch('/api/get_product_details', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ itemCode: itemCode })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success && result.product.availableImeis.length > 0) {
+            // Find first available IMEI not in cart
+            const availableIMEI = result.product.availableImeis.find(imei => 
+                !cart.find(item => item.imei === imei)
+            );
+            
+            if (availableIMEI) {
+                document.getElementById('imeiScanner').value = availableIMEI;
+                processIMEI();
+                showAlert(`Found available IMEI: ${availableIMEI}`, 'info');
+            } else {
+                showAlert('All IMEIs for this product are already in cart', 'warning');
+            }
+        } else {
+            showAlert('No available IMEIs found for this product', 'warning');
+        }
+    } catch (error) {
+        showAlert('Error adding product: ' + error.message, 'danger');
+    }
+}
+
+function clearSearch() {
+    document.getElementById('productSearch').value = '';
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('productSearch').focus();
+}
+
+function clearIMEI() {
+    document.getElementById('imeiScanner').value = '';
+    document.getElementById('imeiResult').innerHTML = '';
+    document.getElementById('imeiScanner').focus();
+}
+
+function useTestIMEI(imei) {
+    document.getElementById('imeiScanner').value = imei;
+    processIMEI();
+}
+
+function useTestSearch(searchTerm) {
+    document.getElementById('productSearch').value = searchTerm;
+    searchProduct();
+}
+
+// IMEI Processing Functions
+async function processIMEI() {
+    const imeiInput = document.getElementById('imeiScanner');
+    const imei = imeiInput.value.trim();
+    
+    if (!imei) {
+        showAlert('Please scan or enter an IMEI number', 'warning');
+        imeiInput.focus();
+        return;
+    }
+    
+    // Validate IMEI format (15 digits)
+    if (!/^\d{15}$/.test(imei)) {
+        showAlert('Invalid IMEI format. IMEI should be exactly 15 digits.', 'danger');
+        imeiInput.focus();
+        return;
+    }
+    
+    // Check if IMEI already in cart or in current quantity mode
+    if (cart.find(item => item.imei === imei) || quantityMode.scannedIMEIs.includes(imei)) {
+        showAlert('This IMEI is already in your cart or scanned!', 'warning');
+        imeiInput.value = '';
+        imeiInput.focus();
+        return;
+    }
+    
+    // Show loading only if not in quantity mode
+    if (!quantityMode.active) {
+        document.getElementById('imeiResult').innerHTML = `
+            <div class="card shadow-lg border-primary">
+                <div class="card-body text-center py-4">
+                    <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                    <h5 class="text-primary">Validating IMEI</h5>
+                    <p class="text-muted">Checking inventory for: <code class="bg-light p-2 rounded">${imei}</code></p>
+                </div>
+            </div>
+        `;
+    }
+    
+    try {
+        const response = await fetch('/api/validate_imei', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ imei: imei })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Check if we're in quantity mode
+            if (quantityMode.active) {
+                handleQuantityModeIMEI(result.product, imei);
+            } else {
+                displayIMEIResult(result.product, imei);
+            }
+        } else {
+            document.getElementById('imeiResult').innerHTML = `
+                <div class="card shadow-lg border-danger">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-times-circle me-2"></i>IMEI Not Found
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center py-3">
+                            <i class="fas fa-exclamation-triangle fa-4x text-danger mb-3"></i>
+                            <h6 class="text-danger fw-bold">${result.error}</h6>
+                            <p class="text-muted">IMEI: <code class="bg-light p-1 rounded">${imei}</code></p>
+                            <div class="mt-3">
+                                <button class="btn btn-outline-danger me-2" onclick="clearIMEIResult()">
+                                    <i class="fas fa-redo me-2"></i>Try Another IMEI
+                                </button>
+                                <button class="btn btn-info" onclick="document.getElementById('productSearch').focus()">
+                                    <i class="fas fa-search me-2"></i>Search Products Instead
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        document.getElementById('imeiResult').innerHTML = `
+            <div class="card shadow-lg border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Network Error
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center py-3">
+                        <i class="fas fa-wifi fa-4x text-warning mb-3"></i>
+                        <p class="text-warning fw-bold">Connection error: ${error.message}</p>
+                        <button class="btn btn-outline-warning" onclick="processIMEI()">
+                            <i class="fas fa-redo me-2"></i>Retry Validation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function displayIMEIResult(product, imei) {
+    document.getElementById('imeiResult').innerHTML = `
+        <div class="card shadow-lg border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-check-circle me-2"></i>IMEI Validated Successfully!
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-7">
+                        <div class="product-info">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-mobile-alt me-2"></i>Product Details:
+                            </h6>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">IMEI:</span>
+                                <code class="text-primary">${imei}</code>
+                            </div>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">Product:</span>
+                                <span class="text-truncate ms-2" title="${product.productName}">${product.productName}</span>
+                            </div>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">Brand:</span>
+                                <span class="badge bg-secondary">${product.brand}</span>
+                            </div>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">Item Code:</span>
+                                <span class="badge bg-primary">${product.itemCode}</span>
+                            </div>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">Set ID:</span>
+                                <span class="text-info">${product.setId}</span>
+                            </div>
+                            <div class="detail-item d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span class="fw-bold">Status:</span>
+                                <span class="badge bg-success">Available for Sale</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="add-to-cart-section text-center">
+                            <i class="fas fa-mobile-alt fa-4x text-success mb-3"></i>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-success btn-lg" onclick="addToCart('${imei}', '${product.setId}', '${product.itemCode}', '${product.productName}', '${product.brand}')">
+                                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="clearIMEIResult()">
+                                    <i class="fas fa-times me-2"></i>Cancel & Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Clear IMEI input
+    document.getElementById('imeiScanner').value = '';
+}
+
+function addToCartByIMEI(imei) {
+    // This function is called from the search results
+    document.getElementById('imeiScanner').value = imei;
+    processIMEI();
+}
+
+function addToCart(imei, setId, itemCode, productName, brand) {
+    // Create cart item
+    const cartItem = {
+        imei: imei,
+        setId: setId,
+        itemCode: itemCode,
+        productName: productName,
+        brand: brand,
+        addedAt: new Date().toLocaleTimeString()
+    };
+    
+    // Add to cart
+    cart.push(cartItem);
+    
+    // Update cart display
+    updateCartDisplay();
+    
+    // Clear IMEI result
+    clearIMEIResult();
+    
+    // Show success message
+    showAlert(`${productName} (IMEI: ${imei}) added to cart successfully!`, 'success');
+    
+    // Focus back on IMEI scanner
+    document.getElementById('imeiScanner').focus();
+}
+
+// Cart Management Functions
+function updateCartDisplay() {
+    const cartItemsContainer = document.getElementById('cartItems');
+    const cartItemCount = document.getElementById('cartItemCount');
+    const totalItems = document.getElementById('totalItems');
+    const clearCartBtn = document.getElementById('clearCartBtn');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    
+    if (cart.length === 0) {
+        cartItemsContainer.innerHTML = `
+            <div class="empty-cart text-center py-5">
+                <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                <h6 class="text-muted">Cart is empty</h6>
+                <p class="text-muted mb-0">Scan IMEI or search products to add items</p>
+            </div>
+        `;
+        cartItemCount.textContent = '0 items';
+        totalItems.textContent = '0';
+        clearCartBtn.disabled = true;
+        checkoutBtn.disabled = true;
+        return;
+    }
+    
+    let cartHTML = '';
+    
+    cart.forEach((item, index) => {
+        cartHTML += `
+            <div class="cart-item border-bottom p-3 ${index % 2 === 0 ? 'bg-light' : ''}">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div class="item-info flex-grow-1">
+                        <h6 class="mb-1 text-truncate" title="${item.productName}">
+                            <i class="fas fa-mobile-alt me-1 text-primary"></i>
+                            ${item.productName}
+                            ${item.fromQuantityMode ? '<span class="badge bg-warning text-dark ms-2">Qty Mode</span>' : ''}
+                        </h6>
+                        <div class="item-details">
+                            <small class="text-muted d-block">
+                                <i class="fas fa-barcode me-1"></i>IMEI: <code>${item.imei}</code>
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-tag me-1"></i>Brand: <span class="badge bg-secondary badge-sm">${item.brand}</span>
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-cube me-1"></i>Set: ${item.setId}
+                            </small>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-clock me-1"></i>Added: ${item.addedAt}
+                            </small>
+                        </div>
+                    </div>
+                    <div class="cart-actions text-end">
+                        <button class="btn btn-outline-danger btn-sm" onclick="removeFromCart(${index})" 
+                                data-bs-toggle="tooltip" title="Remove from cart">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    cartItemsContainer.innerHTML = cartHTML;
+    cartItemCount.textContent = `${cart.length} item${cart.length !== 1 ? 's' : ''}`;
+    totalItems.textContent = cart.length;
+    clearCartBtn.disabled = false;
+    checkoutBtn.disabled = false;
+    
+    // Initialize tooltips for new elements
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+}
+
+function removeFromCart(index) {
+    const item = cart[index];
+    
+    if (confirm(`Remove ${item.productName} (IMEI: ${item.imei}) from cart?`)) {
+        cart.splice(index, 1);
+        updateCartDisplay();
+        showAlert('Item removed from cart', 'info');
+        
+        // If search results are showing, refresh to update button states
+        if (document.getElementById('searchResults').style.display === 'block') {
+            const currentSearch = document.getElementById('productSearch').value;
+            if (currentSearch) {
+                searchProduct();
+            }
+        }
+    }
+}
+
+function clearCart() {
+    if (cart.length === 0) {
+        showAlert('Cart is already empty', 'info');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to clear the entire cart? This will remove all ${cart.length} items.`)) {
+        cart = [];
+        updateCartDisplay();
+        clearIMEIResult();
+        showAlert('Cart cleared successfully', 'info');
+        
+        // If search results are showing, refresh to update button states
+        if (document.getElementById('searchResults').style.display === 'block') {
+            const currentSearch = document.getElementById('productSearch').value;
+            if (currentSearch) {
+                searchProduct();
+            }
+        }
+    }
+}
+
+function clearIMEIResult() {
+    document.getElementById('imeiResult').innerHTML = '';
+    document.getElementById('imeiScanner').value = '';
+}
+
+// Checkout Functions
+function proceedToCheckout() {
+    // Validate invoice information
+    const invoiceFields = ['invoiceNumber', 'invoiceDate', 'customerName', 'destination'];
+    let isValid = true;
+    
+    invoiceFields.forEach(fieldName => {
+        const element = document.getElementById(fieldName);
+        const value = element.value.trim();
+        
+        if (!value) {
+            element.classList.add('border-danger');
+            isValid = false;
+        } else {
+            element.classList.remove('border-danger');
+            element.classList.add('border-success');
+        }
+    });
+    
+    if (!isValid) {
+        showAlert('Please fill in all invoice information fields', 'danger');
+        document.getElementById('invoiceNumber').focus();
+        return;
+    }
+    
+    if (cart.length === 0) {
+        showAlert('Cart is empty. Please add items before checkout.', 'warning');
+        return;
+    }
+    
+    // Generate checkout summary
+    generateCheckoutSummary();
+    
+    // Show checkout modal
+    const checkoutModal = new bootstrap.Modal(document.getElementById('checkoutModal'));
+    checkoutModal.show();
+}
+
+function generateCheckoutSummary() {
+    const invoiceNumber = document.getElementById('invoiceNumber').value;
+    const invoiceDate = document.getElementById('invoiceDate').value;
+    const customerName = document.getElementById('customerName').value;
+    const destination = document.getElementById('destination').value;
+    
+    // Group items by product for better display
+    const groupedItems = {};
+    cart.forEach(item => {
+        if (!groupedItems[item.itemCode]) {
+            groupedItems[item.itemCode] = {
+                productName: item.productName,
+                brand: item.brand,
+                itemCode: item.itemCode,
+                items: []
+            };
+        }
+        groupedItems[item.itemCode].items.push(item);
+    });
+    
+    let summaryHTML = `
+        <div class="checkout-summary">
+            <!-- Invoice Information -->
+            <div class="card border-primary mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-file-invoice me-2"></i>Invoice Information</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-row mb-2">
+                                <strong>Invoice Number:</strong> 
+                                <span class="badge bg-primary ms-2">${invoiceNumber}</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Invoice Date:</strong> 
+                                <span class="text-info">${new Date(invoiceDate).toLocaleDateString('en-IN')}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-row mb-2">
+                                <strong>Customer:</strong> 
+                                <span class="text-success">${customerName}</span>
+                            </div>
+                            <div class="info-row">
+                                <strong>Destination:</strong> 
+                                <span class="text-warning">${destination}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Items Summary -->
+            <div class="card border-success mb-3">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Items Summary (${cart.length} phones from ${Object.keys(groupedItems).length} products)
+                    </h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50%">Product Details</th>
+                                    <th width="30%">IMEI Number</th>
+                                    <th width="20%">Brand</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+    `;
+    
+    Object.values(groupedItems).forEach(group => {
+        group.items.forEach((item, index) => {
+            summaryHTML += `
+                <tr>
+                    <td>
+                        <div class="product-cell">
+                            <div class="fw-bold text-truncate" style="max-width: 250px;" title="${item.productName}">
+                                ${item.productName}
+                                ${item.fromQuantityMode ? '<span class="badge bg-warning text-dark ms-2">Qty Mode</span>' : ''}
+                            </div>
+                            <small class="text-muted">
+                                <i class="fas fa-cube me-1"></i>Set: ${item.setId}
+                            </small>
+                            <br>
+                            <small class="text-muted">
+                                <i class="fas fa-barcode me-1"></i>Code: ${item.itemCode}
+                            </small>
+                        </div>
+                    </td>
+                    <td>
+                        <code class="small bg-light p-1 rounded">${item.imei}</code>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">${item.brand}</span>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+    
+    summaryHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Summary Statistics -->
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-calculator me-2"></i>Final Summary & Statistics</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="summary-stat d-flex justify-content-between mb-2 p-2 bg-light rounded">
+                                <span><i class="fas fa-mobile-alt me-2 text-primary"></i>Total Phones:</span>
+                                <span class="fw-bold">${cart.length}</span>
+                            </div>
+                            <div class="summary-stat d-flex justify-content-between p-2 bg-light rounded">
+                                <span><i class="fas fa-cube me-2 text-info"></i>Unique Products:</span>
+                                <span class="fw-bold">${Object.keys(groupedItems).size}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="total-summary text-center p-3 bg-info bg-opacity-10 rounded">
+                                <div class="display-6 fw-bold text-info mb-2">${cart.length}</div>
+                                <div class="text-muted">Items Ready for Sale</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('checkoutSummary').innerHTML = summaryHTML;
+}
+
+async function completeSale() {
+    const invoiceData = {
+        invoiceNumber: document.getElementById('invoiceNumber').value,
+        invoiceDate: document.getElementById('invoiceDate').value,
+        customerName: document.getElementById('customerName').value,
+        destination: document.getElementById('destination').value,
+        items: cart,
+        totalItems: cart.length
+    };
+    
+    // Show loading state
+    const completeBtn = document.querySelector('#checkoutModal .btn-success');
+    const originalText = completeBtn.innerHTML;
+    completeBtn.disabled = true;
+    completeBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing Sale...';
+    
+    try {
+        const response = await fetch('/api/complete_cart_sale', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(invoiceData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal
+            const checkoutModal = bootstrap.Modal.getInstance(document.getElementById('checkoutModal'));
+            checkoutModal.hide();
+            
+            // Show success message with details
+            showAlert(`🎉 Sale completed successfully! ${result.message}`, 'success');
+            
+            // Show additional success info
+            setTimeout(() => {
+                showAlert(`Invoice: ${invoiceData.invoiceNumber} | Items: ${cart.length} phones processed`, 'info');
+            }, 2000);
+            
+            // Reset everything after success
+            setTimeout(() => {
+                resetSalePage();
+            }, 4000);
+            
+        } else {
+            showAlert(result.error || 'Error completing sale', 'danger');
+        }
+    } catch (error) {
+        showAlert('Network error: ' + error.message, 'danger');
+    } finally {
+        completeBtn.disabled = false;
+        completeBtn.innerHTML = originalText;
+    }
+}
+
+function resetSalePage() {
+    // Clear cart
+    cart = [];
+    updateCartDisplay();
+    
+    // Reset quantity mode
+    quantityMode.active = false;
+    quantityMode.scannedCount = 0;
+    quantityMode.scannedIMEIs = [];
+    updateQuantityModeDisplay();
+    clearSelectedProduct();
+    
+    // Reset form
+    document.querySelectorAll('input').forEach(input => {
+        if (input.type === 'date') {
+            input.value = new Date().toISOString().split('T')[0];
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Clear results
+    clearIMEIResult();
+    clearSearch();
+    
+    // Remove validation classes
+    document.querySelectorAll('.border-success, .border-danger').forEach(el => {
+        el.classList.remove('border-success', 'border-danger');
+    });
+    
+    // Focus on invoice number
+    document.getElementById('invoiceNumber').focus();
+    
+    showAlert('Sales page reset successfully. Ready for next transaction.', 'info');
+}
+
+// Utility Functions
+function showAlert(message, type = 'success') {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show animate-bounceIn shadow-lg" 
+             role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 350px; max-width: 500px;">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    ${type === 'danger' ? '<i class="fas fa-exclamation-triangle fa-lg"></i>' : 
+                      type === 'warning' ? '<i class="fas fa-exclamation-circle fa-lg"></i>' :
+                      type === 'info' ? '<i class="fas fa-info-circle fa-lg"></i>' :
+                      '<i class="fas fa-check-circle fa-lg"></i>'}
+                </div>
+                <div class="flex-grow-1">
+                    ${message}
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Remove existing alerts
+    document.querySelectorAll('.alert').forEach(alert => {
+        if (alert.style.position === 'fixed') {
+            alert.remove();
+        }
+    });
+    
+    // Insert alert
+    const alertDiv = document.createElement('div');
+    alertDiv.innerHTML = alertHtml;
+    document.body.appendChild(alertDiv);
+    
+    // Auto-hide after 6 seconds
+    setTimeout(() => {
+        const alert = alertDiv.querySelector('.alert');
+        if (alert) {
+            try {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            } catch (e) {
+                alert.remove();
+            }
+        }
+    }, 6000);
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // Ctrl+Enter to focus IMEI scanner
+    if (e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('imeiScanner').focus();
+        showAlert('IMEI scanner focused', 'info');
+    }
+    
+    // Ctrl+S to focus search
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        document.getElementById('productSearch').focus();
+        showAlert('Product search focused', 'info');
+    }
+    
+    // Ctrl+C to proceed to checkout
+    if (e.ctrlKey && e.key === 'c' && cart.length > 0) {
+        e.preventDefault();
+        proceedToCheckout();
+    }
+    
+    // Escape key to clear current action
+    if (e.key === 'Escape') {
+        clearIMEIResult();
+        clearSearch();
+        if (quantityMode.active) {
+            cancelQuantityMode();
+        }
+    }
+});
+
+// Page visibility change - focus IMEI scanner when page becomes visible
+document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+        setTimeout(() => {
+            document.getElementById('imeiScanner').focus();
+        }, 100);
+    }
+});
+</script>
+{% endblock %}
+

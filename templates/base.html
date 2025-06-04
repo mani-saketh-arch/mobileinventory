@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AS Mobiles Inventory{% endblock %}</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="Professional inventory management system for AS Mobiles">
+    <meta name="author" content="AS Mobiles">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📱</text></svg>">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <!-- Additional Head Content -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Enhanced Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand animate-fadeInUp" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-mobile-alt me-2"></i>AS Mobiles Inventory
+                <small class="d-block" style="font-size: 0.6em; opacity: 0.8;">Professional Inventory Management</small>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'inward_page' }}" href="{{ url_for('inward_page') }}">
+                            <i class="fas fa-arrow-down me-1"></i>Inward Entry
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'outward_page' }}" href="{{ url_for('outward_page') }}">
+                            <i class="fas fa-arrow-up me-1"></i>Outward Sales
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ 'active' if request.endpoint == 'inventory_page' }}" href="{{ url_for('inventory_page') }}">
+                            <i class="fas fa-boxes me-1"></i>Inventory
+                        </a>
+                    </li>
+                   
+                </ul>
+                
+                <!-- User Info & System Status -->
+                <div class="d-flex align-items-center text-white">
+                    <div class="me-3">
+                        <span class="badge bg-success rounded-pill">
+                            <i class="fas fa-circle me-1" style="font-size: 0.6em;"></i>Online
+                        </span>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            <i class="fas fa-user-circle fa-lg"></i>
+                        </div>
+                        <div>
+                            <small class="d-block">Welcome</small>
+                            <strong>Admin</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main style="padding-top: 120px; min-height: calc(100vh - 120px);">
+        <!-- Flash Messages with Enhanced Design -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="container mt-3">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show animate-bounceIn" role="alert">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    {% if category == 'error' %}
+                                        <i class="fas fa-exclamation-triangle fa-lg"></i>
+                                    {% else %}
+                                        <i class="fas fa-check-circle fa-lg"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <strong>{{ 'Error' if category == 'error' else 'Success' }}!</strong>
+                                    {{ message }}
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- Page Content -->
+        <div class="container-fluid px-4">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Enhanced Footer -->
+    <footer class="mt-auto">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-mobile-alt fa-2x me-3"></i>
+                        <div>
+                            <h6 class="mb-0">AS Mobiles</h6>
+                            <small class="opacity-75">Professional Inventory Management</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-md-end">
+                        <div class="d-flex justify-content-md-end justify-content-start align-items-center">
+                            <div class="me-4">
+                                <small class="opacity-75">System Status:</small>
+                                <span class="badge bg-success ms-1">
+                                    <i class="fas fa-check me-1"></i>Operational
+                                </span>
+                            </div>
+                            <div>
+                                <small class="opacity-75">Version 1.0</small>
+                            </div>
+                        </div>
+                        <div class="mt-1">
+                            <small class="opacity-75">
+                                Last Updated: <span id="current-time"></span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="my-3 opacity-25">
+            <div class="row">
+                <div class="col-md-6">
+                    <small class="opacity-75">&copy; 2025 AS Mobiles. All rights reserved.</small>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <small class="opacity-75">
+                        Built with <i class="fas fa-heart text-danger"></i> using Flask + Firebase
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="d-none position-fixed top-0 start-0 w-100 h-100" style="background: rgba(255, 255, 255, 0.9); z-index: 9999;">
+        <div class="d-flex justify-content-center align-items-center h-100">
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+                <h5>Processing...</h5>
+                <p class="text-muted">Please wait while we handle your request</p>
+            </div>
+        </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
