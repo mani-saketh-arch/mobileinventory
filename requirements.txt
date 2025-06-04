@@ -3,3 +3,5 @@ firebase-admin
 qrcode
 Pillow
 python-dotenv
+gunicorn
+requests
