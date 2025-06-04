@@ -1,0 +1,398 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AS Mobiles{% endblock %}
+
+{% block content %}
+<!-- Simple Page Header -->
+<div class="row mb-3">
+    <div class="col-12">
+        <h2>📊 Dashboard</h2>
+        <p class="text-muted">Overview of your inventory system</p>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-primary">📱 Total Products</h5>
+                <h3 id="totalProducts">0</h3>
+                <small class="text-muted">Unique items</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-success">✅ Available Sets</h5>
+                <h3 id="availableSets">0</h3>
+                <small class="text-muted">Ready to sell</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-info">📦 Total Phones</h5>
+                <h3 id="totalPhones">0</h3>
+                <small class="text-muted">In stock</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="text-warning">⚠️ Pending IMEI</h5>
+                <h3 id="pendingIMEI">0</h3>
+                <small class="text-muted">Need attention</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Today's Summary -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📈 Today's Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h4 class="text-success" id="todayInward">0</h4>
+                        <small>Phones Added</small>
+                    </div>
+                    <div class="col-6">
+                        <h4 class="text-danger" id="todayOutward">0</h4>
+                        <small>Phones Sold</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>🔧 Quick Actions</h5>
+            </div>
+            <div class="card-body text-center">
+                <a href="{{ url_for('inward_page') }}" class="btn btn-success me-2 mb-2">
+                    ➕ Add Stock
+                </a>
+                <a href="{{ url_for('outward_page') }}" class="btn btn-primary me-2 mb-2">
+                    🛒 Make Sale
+                </a>
+                <a href="{{ url_for('inventory_page') }}" class="btn btn-info me-2 mb-2">
+                    📋 View Inventory
+                </a>
+                <button onclick="refreshDashboard()" class="btn btn-warning mb-2">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📥 Recent Inward (Last 5)</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentInward">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>📤 Recent Outward (Last 5)</h5>
+            </div>
+            <div class="card-body">
+                <div id="recentOutward">
+                    <p class="text-muted">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Summary by Brand -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5>📊 Stock by Brand</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Available Sets</th>
+                                <th>Available Phones</th>
+                                <th>Pending Sets</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="brandStockTable">
+                            <tr>
+                                <td colspan="5" class="text-center">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Simple dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+async function loadDashboardData() {
+    try {
+        showMessage('Loading dashboard data...', 'info');
+        
+        // Load all data
+        await Promise.all([
+            loadStats(),
+            loadTodayActivity(),
+            loadRecentTransactions(),
+            loadBrandStock()
+        ]);
+        
+        showMessage('Dashboard loaded successfully!', 'success');
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        showMessage('Error loading dashboard: ' + error.message, 'danger');
+    }
+}
+
+async function loadStats() {
+    try {
+        const response = await fetch('/api/get_dashboard_stats');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('totalProducts').textContent = result.stats.totalProducts || 0;
+            document.getElementById('availableSets').textContent = result.stats.availableSets || 0;
+            document.getElementById('totalPhones').textContent = result.stats.totalPhones || 0;
+            document.getElementById('pendingIMEI').textContent = result.stats.pendingIMEI || 0;
+        } else {
+            throw new Error(result.error || 'Failed to load stats');
+        }
+    } catch (error) {
+        console.error('Error loading stats:', error);
+        // Set fallback values
+        document.getElementById('totalProducts').textContent = '0';
+        document.getElementById('availableSets').textContent = '0';
+        document.getElementById('totalPhones').textContent = '0';
+        document.getElementById('pendingIMEI').textContent = '0';
+    }
+}
+
+async function loadTodayActivity() {
+    try {
+        const response = await fetch('/api/get_daily_summary');
+        const result = await response.json();
+        
+        if (result.success) {
+            document.getElementById('todayInward').textContent = result.summary.todayInward || 0;
+            document.getElementById('todayOutward').textContent = result.summary.todayOutward || 0;
+        }
+    } catch (error) {
+        console.error('Error loading today activity:', error);
+        document.getElementById('todayInward').textContent = '0';
+        document.getElementById('todayOutward').textContent = '0';
+    }
+}
+
+async function loadRecentTransactions() {
+    try {
+        const response = await fetch('/api/get_recent_transactions');
+        const result = await response.json();
+        
+        if (result.success) {
+            // Display recent inward
+            const inwardDiv = document.getElementById('recentInward');
+            if (result.recentInward.length === 0) {
+                inwardDiv.innerHTML = '<p class="text-muted">No recent inward transactions</p>';
+            } else {
+                let inwardHTML = '';
+                result.recentInward.forEach(trans => {
+                    inwardHTML += `
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>${trans.invoiceNumber}</strong><br>
+                            <small>Supplier: ${trans.supplier}</small><br>
+                            <small>${trans.totalQuantity} phones | ${trans.totalSets} sets</small>
+                        </div>
+                    `;
+                });
+                inwardDiv.innerHTML = inwardHTML;
+            }
+            
+            // Display recent outward
+            const outwardDiv = document.getElementById('recentOutward');
+            if (result.recentOutward.length === 0) {
+                outwardDiv.innerHTML = '<p class="text-muted">No recent outward transactions</p>';
+            } else {
+                let outwardHTML = '';
+                result.recentOutward.forEach(trans => {
+                    outwardHTML += `
+                        <div class="border-bottom pb-2 mb-2">
+                            <strong>${trans.invoiceNumber}</strong><br>
+                            <small>Customer: ${trans.customer}</small><br>
+                            <small>${trans.totalQuantity} phones</small>
+                        </div>
+                    `;
+                });
+                outwardDiv.innerHTML = outwardHTML;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading recent transactions:', error);
+        document.getElementById('recentInward').innerHTML = '<p class="text-danger">Error loading data</p>';
+        document.getElementById('recentOutward').innerHTML = '<p class="text-danger">Error loading data</p>';
+    }
+}
+
+async function loadBrandStock() {
+    try {
+        const response = await fetch('/api/get_brand_summary');
+        const result = await response.json();
+        
+        if (result.success) {
+            const tableBody = document.getElementById('brandStockTable');
+            
+            if (result.brandSummary.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="5" class="text-center">No stock data available</td></tr>';
+            } else {
+                let tableHTML = '';
+                result.brandSummary.forEach(brand => {
+                    tableHTML += `
+                        <tr>
+                            <td><strong>${brand.brand}</strong></td>
+                            <td>${brand.availableSets}</td>
+                            <td>${brand.availablePhones}</td>
+                            <td>${brand.pendingSets}</td>
+                            <td><strong>${brand.totalStock}</strong></td>
+                        </tr>
+                    `;
+                });
+                tableBody.innerHTML = tableHTML;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading brand stock:', error);
+        document.getElementById('brandStockTable').innerHTML = 
+            '<tr><td colspan="5" class="text-danger">Error loading brand data</td></tr>';
+    }
+}
+
+async function refreshDashboard() {
+    showMessage('Refreshing dashboard...', 'info');
+    await loadDashboardData();
+}
+
+function showMessage(message, type) {
+    // Simple alert system
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alertDiv);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.parentNode.removeChild(alertDiv);
+        }
+    }, 3000);
+}
+
+// Auto refresh every 5 minutes
+setInterval(loadDashboardData, 300000);
+</script>
+
+<style>
+/* Simple, clean styles */
+.card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+
+.card-body {
+    padding: 1rem;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) > td {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+    margin-bottom: 0.5rem;
+}
+
+.text-success { color: #198754 !important; }
+.text-danger { color: #dc3545 !important; }
+.text-primary { color: #0d6efd !important; }
+.text-warning { color: #ffc107 !important; }
+.text-info { color: #0dcaf0 !important; }
+.text-muted { color: #6c757d !important; }
+
+h2, h3, h5 {
+    margin-bottom: 0.5rem;
+}
+
+.border-bottom {
+    border-bottom: 1px solid #dee2e6 !important;
+}
+
+@media (max-width: 768px) {
+    .col-md-3, .col-md-6 {
+        margin-bottom: 1rem;
+    }
+    
+    .btn {
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>
+
+{% endblock %}
