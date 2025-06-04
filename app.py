@@ -15,8 +15,21 @@ app = Flask(__name__)
 app.secret_key = 'as-mobiles-secret-key-2025'  # Change this in production
 
 # Initialize Firebase
+import os
+import json
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_key.json")
+    if os.getenv('FIREBASE_CREDENTIALS'):
+        # Production - from environment variable
+        cred_dict = json.loads(os.getenv('FIREBASE_CREDENTIALS'))
+        cred = credentials.Certificate(cred_dict)
+    else:
+        # Local development - from file
+        cred = credentials.Certificate("firebase_key.json")
+    
     firebase_admin.initialize_app(cred)
 
 db = firestore.client()
